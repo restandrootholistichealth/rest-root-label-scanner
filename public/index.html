@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rest & Root Label Scanner</title>
+<meta name="description" content="AI-powered ingredient analyzer for clean living by Lindsay Greear, Certified Naturopath & HTMA Practitioner">
+<meta name="theme-color" content="#5C3D2E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Label Scanner">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -55,6 +62,32 @@
     max-width: 600px;
     margin: 0 auto;
     padding: 24px 16px 60px;
+  }
+
+  .install-banner {
+    background: var(--light-sage);
+    border: 1px solid var(--sage);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .install-banner p { font-size: 13px; color: var(--deep-sage); font-weight: 500; }
+  .install-banner button {
+    background: var(--sage);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-family: 'Jost', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
   }
 
   .mode-tabs {
@@ -305,6 +338,12 @@
 
 <div class="main">
 
+  <!-- PWA Install Banner -->
+  <div class="install-banner hidden" id="installBanner">
+    <p>📲 Add to your home screen for quick access!</p>
+    <button onclick="installPWA()">Install App</button>
+  </div>
+
   <div class="mode-tabs">
     <button class="mode-tab active" onclick="setMode('photo')">📷 Scan a Photo</button>
     <button class="mode-tab" onclick="setMode('text')">✏️ Type Ingredients</button>
@@ -348,6 +387,32 @@
   let currentMode = 'photo';
   let photoData = null;
   let photoMediaType = null;
+  let deferredPrompt = null;
+
+  // PWA Install prompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBanner').classList.remove('hidden');
+  });
+
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('installBanner').classList.add('hidden');
+    deferredPrompt = null;
+  });
+
+  async function installPWA() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    document.getElementById('installBanner').classList.add('hidden');
+  }
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
 
   function setMode(mode) {
     currentMode = mode;
