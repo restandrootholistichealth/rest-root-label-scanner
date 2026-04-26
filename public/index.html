@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rest & Root Label Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FAF6F0;
+    --sage: #7A9E7E;
+    --deep-sage: #4A6E4E;
+    --brown: #5C3D2E;
+    --blush: #C9A882;
+    --light-sage: #EEF4EE;
+    --red: #C0392B;
+    --red-light: #FADBD8;
+    --yellow: #E67E22;
+    --yellow-light: #FDEBD0;
+    --green-light: #D5F5E3;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--cream);
+    font-family: 'Jost', sans-serif;
+    color: var(--brown);
+    min-height: 100vh;
+  }
+
+  .header {
+    background: var(--brown);
+    padding: 20px 24px;
+    text-align: center;
+  }
+
+  .header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    color: var(--cream);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .header p {
+    color: var(--blush);
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .main {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+  }
+
+  .mode-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border: 1px solid var(--sage);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .mode-tab {
+    flex: 1;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Jost', sans-serif;
+    border: none;
+    cursor: pointer;
+    background: white;
+    color: var(--brown);
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .mode-tab.active {
+    background: var(--sage);
+    color: white;
+  }
+
+  .input-section { margin-bottom: 16px; }
+
+  .upload-area {
+    border: 2px dashed var(--sage);
+    border-radius: 10px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    background: white;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .upload-area:hover { background: var(--light-sage); }
+  .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+  .upload-icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-area h3 { font-size: 15px; font-weight: 600; color: var(--brown); margin-bottom: 6px; }
+  .upload-area p { font-size: 12px; color: #8a7a6a; }
+
+  .preview-img {
+    width: 100%;
+    max-height: 250px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin-top: 12px;
+    display: none;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 130px;
+    padding: 14px;
+    font-size: 14px;
+    font-family: 'Jost', sans-serif;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: white;
+    color: var(--brown);
+    resize: vertical;
+  }
+
+  textarea:focus { outline: none; border-color: var(--sage); }
+
+  .examples {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+
+  .examples span { font-size: 12px; color: #8a7a6a; }
+
+  .example-btn {
+    font-size: 12px;
+    color: var(--sage);
+    background: none;
+    border: 1px solid var(--sage);
+    border-radius: 20px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-family: 'Jost', sans-serif;
+    font-weight: 500;
+  }
+
+  .scan-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Jost', sans-serif;
+    border: none;
+    border-radius: 10px;
+    background: var(--sage);
+    color: white;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: background 0.2s;
+  }
+
+  .scan-btn:hover { background: var(--deep-sage); }
+  .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .results { margin-top: 24px; }
+
+  .verdict-banner {
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .verdict-banner.danger { background: var(--red); color: white; }
+  .verdict-banner.caution { background: var(--yellow); color: white; }
+  .verdict-banner.safe { background: var(--deep-sage); color: white; }
+
+  .verdict-banner .verdict-text {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .verdict-banner .verdict-sub { font-size: 12px; opacity: 0.85; }
+
+  .summary-card {
+    background: white;
+    border: 1px solid #e8e0d8;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--brown);
+  }
+
+  .swap-tip {
+    background: var(--light-sage);
+    border-left: 3px solid var(--sage);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--deep-sage);
+    margin-top: 10px;
+    font-weight: 500;
+  }
+
+  .section-title {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #8a7a6a;
+    font-weight: 600;
+    margin: 16px 0 10px;
+  }
+
+  .flag-card {
+    background: white;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--red);
+  }
+
+  .flag-card.caution { border-left-color: var(--yellow); }
+  .flag-card.safe { border-left-color: var(--deep-sage); }
+
+  .flag-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--brown);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .risk-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .risk-badge.avoid { background: var(--red-light); color: var(--red); }
+  .risk-badge.caution { background: var(--yellow-light); color: var(--yellow); }
+  .risk-badge.safe { background: var(--green-light); color: var(--deep-sage); }
+
+  .flag-reason { font-size: 13px; color: #6a5a4a; line-height: 1.6; }
+  .flag-found { font-size: 12px; color: #8a7a6a; margin-top: 4px; font-style: italic; }
+
+  .extracted-box {
+    background: var(--light-sage);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--deep-sage);
+    line-height: 1.6;
+  }
+
+  .extracted-box strong { display: block; margin-bottom: 4px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; }
+
+  .loading {
+    text-align: center;
+    padding: 30px;
+    color: #8a7a6a;
+    font-size: 14px;
+  }
+
+  .dots { display: inline-flex; gap: 4px; margin-left: 8px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); animation: pulse 1.2s ease-in-out infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+  .footer {
+    text-align: center;
+    margin-top: 32px;
+    font-size: 11px;
+    color: #8a7a6a;
+    line-height: 1.6;
+  }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Rest & Root Label Scanner</h1>
+  <p>Certified Naturopath & HTMA Practitioner</p>
+</div>
+
+<div class="main">
+
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="setMode('photo')">📷 Scan a Photo</button>
+    <button class="mode-tab" onclick="setMode('text')">✏️ Type Ingredients</button>
+  </div>
+
+  <!-- PHOTO MODE -->
+  <div id="photo-mode" class="input-section">
+    <div class="upload-area" id="uploadArea">
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+      <div class="upload-icon">📷</div>
+      <h3>Take a photo or upload a label</h3>
+      <p>Point your camera at any ingredient list</p>
+    </div>
+    <img id="preview" class="preview-img" alt="Label preview">
+  </div>
+
+  <!-- TEXT MODE -->
+  <div id="text-mode" class="input-section hidden">
+    <div class="examples">
+      <span>Try an example:</span>
+      <button class="example-btn" onclick="loadExample('skincare')">Moisturizer</button>
+      <button class="example-btn" onclick="loadExample('food')">Granola bar</button>
+      <button class="example-btn" onclick="loadExample('cleaning')">Cleaning spray</button>
+    </div>
+    <textarea id="ingredients" placeholder="Paste ingredient list here...&#10;&#10;Example: Water, Glycerin, Methylparaben, Fragrance, Sodium Lauryl Sulfate..."></textarea>
+  </div>
+
+  <button class="scan-btn" id="scanBtn" onclick="scan()">🔍 Scan These Ingredients</button>
+
+  <div class="results" id="results"></div>
+
+  <div class="footer">
+    <p>🌿 Rest & Root Holistic Health LLC</p>
+    <p>Lindsay Greear — Certified Naturopath & HTMA Practitioner</p>
+    <p>For educational purposes only. Not medical advice.</p>
+  </div>
+
+</div>
+
+<script>
+  let currentMode = 'photo';
+  let photoData = null;
+  let photoMediaType = null;
+
+  function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-tab').forEach((t, i) => {
+      t.classList.toggle('active', (i === 0 && mode === 'photo') || (i === 1 && mode === 'text'));
+    });
+    document.getElementById('photo-mode').classList.toggle('hidden', mode !== 'photo');
+    document.getElementById('text-mode').classList.toggle('hidden', mode !== 'text');
+    document.getElementById('results').innerHTML = '';
+  }
+
+  function handlePhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    photoMediaType = file.type;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      photoData = e.target.result.split(',')[1];
+      const preview = document.getElementById('preview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function loadExample(type) {
+    const examples = {
+      skincare: "Water, Glycerin, Methylparaben, Fragrance, Sodium Lauryl Sulfate, Propylparaben, Dimethicone, Phenoxyethanol, Tocopheryl Acetate, Carbomer",
+      food: "Enriched Flour, High Fructose Corn Syrup, Red 40, Yellow 5, Sodium Nitrite, BHT, Partially Hydrogenated Soybean Oil, Natural Flavors, Carrageenan",
+      cleaning: "Water, Sodium Hypochlorite, Fragrance, Benzalkonium Chloride, Ammonium Hydroxide, Sodium Lauryl Sulfate, Optical Brighteners"
+    };
+    document.getElementById('ingredients').value = examples[type];
+    setMode('text');
+  }
+
+  async function scan() {
+    const btn = document.getElementById('scanBtn');
+    const results = document.getElementById('results');
+
+    if (currentMode === 'photo' && !photoData) {
+      results.innerHTML = '<div class="summary-card">Please take or upload a photo first!</div>';
+      return;
+    }
+
+    if (currentMode === 'text' && !document.getElementById('ingredients').value.trim()) {
+      results.innerHTML = '<div class="summary-card">Please paste some ingredients first!</div>';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = 'Scanning<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
+    results.innerHTML = '<div class="loading">Analyzing ingredients<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span></div>';
+
+    try {
+      const body = currentMode === 'photo'
+        ? { image: { data: photoData, mediaType: photoMediaType } }
+        : { ingredients: document.getElementById('ingredients').value.trim() };
+
+      const response = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+      const data = await response.json();
+      renderResults(data);
+    } catch (err) {
+      results.innerHTML = `<div class="summary-card">Something went wrong — please try again! ${err.message}</div>`;
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Scan These Ingredients';
+  }
+
+  function renderResults(data) {
+    const verdictClass = data.verdict === 'PUT IT BACK' ? 'danger' : data.verdict === 'CAUTION' ? 'caution' : 'safe';
+    const verdictSub = data.verdict === 'PUT IT BACK' ? 'This product contains ingredients to avoid' : data.verdict === 'CAUTION' ? 'Some ingredients worth watching' : 'No major red flags found';
+
+    let html = `
+      <div class="verdict-banner ${verdictClass}">
+        <div class="verdict-text">${data.verdict}</div>
+        <div class="verdict-sub">${verdictSub}</div>
+      </div>
+    `;
+
+    if (data.extracted_ingredients) {
+      html += `<div class="extracted-box"><strong>Ingredients found in photo</strong>${data.extracted_ingredients}</div>`;
+    }
+
+    html += `<div class="summary-card">${data.summary}`;
+    if (data.swap_tip) html += `<div class="swap-tip">💡 ${data.swap_tip}</div>`;
+    html += `</div>`;
+
+    const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
+    const safe = (data.flags || []).filter(f => f.risk === 'SAFE');
+
+    if (flagged.length > 0) {
+      html += `<div class="section-title">Flagged ingredients</div>`;
+      flagged.forEach(f => {
+        const cls = f.risk === 'AVOID' ? 'danger' : 'caution';
+        const badgeCls = f.risk === 'AVOID' ? 'avoid' : 'caution';
+        html += `
+          <div class="flag-card ${cls}">
+            <div class="flag-name">${f.name} <span class="risk-badge ${badgeCls}">${f.risk}</span></div>
+            <div class="flag-reason">${f.reason}</div>
+            ${f.found_in ? `<div class="flag-found">Also hides in: ${f.found_in}</div>` : ''}
+          </div>
+        `;
+      });
+    }
+
+    if (safe.length > 0) {
+      html += `<div class="section-title">Recognized safe ingredients</div>`;
+      html += `<div class="flag-card safe"><div class="flag-reason">${safe.map(f => f.name).join(' · ')}</div></div>`;
+    }
+
+    if (flagged.length === 0) {
+      html += `<div class="flag-card safe"><div class="flag-reason">No major red flag ingredients detected!</div></div>`;
+    }
+
+    document.getElementById('results').innerHTML = html;
+  }
+</script>
+
+</body>
+</html>
