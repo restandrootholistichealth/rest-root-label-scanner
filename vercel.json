@@ -4,6 +4,10 @@
     {
       "src": "api/scan.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/public/index.html",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -13,7 +17,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/api/public/$1"
+      "dest": "/api/public/index.html"
     }
   ]
 }
