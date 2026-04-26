@@ -54,7 +54,7 @@ Write warmly like texting a friend. Never scary, always empowering.`,
     }
 
     const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: model: "claude-sonnet-4-5",
       max_tokens: 1024,
       messages: [{ role: "user", content }],
     });
