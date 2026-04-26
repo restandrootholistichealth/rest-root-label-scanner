@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "scan.js",
+      "src": "api/scan.js",
       "use": "@vercel/node"
     },
     {
@@ -13,7 +13,7 @@
   "routes": [
     {
       "src": "/api/scan",
-      "dest": "/scan.js"
+      "dest": "/api/scan.js"
     },
     {
       "src": "/(.*)",
