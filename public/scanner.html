@@ -1,7 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+  <script>
+  (function() {
+    const savedKey = localStorage.getItem('rr_license_key');
+    if (!savedKey) {
+      window.location.replace('/');
+    }
+  })();
+</script>
+    <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rest & Root Label Scanner</title>
 <meta name="description" content="AI-powered ingredient analyzer for clean living by Lindsay Greear, Certified Naturopath & HTMA Practitioner">
