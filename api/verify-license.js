@@ -25,15 +25,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, message: 'Please enter a license key.' });
   }
 
-  const PRODUCT_PERMALINK = process.env.GUMROAD_PRODUCT_PERMALINK || 'scanner';
+ const PRODUCT_ID = process.env.GUMROAD_PRODUCT_ID || 'ad4EcwW19QnRiGxSSNMBPA==';
 
   try {
     const params = new URLSearchParams({
-      product_permalink: PRODUCT_PERMALINK,
+      product_id: PRODUCT_ID,
       license_key: licenseKey.trim(),
       increment_uses_count: alreadyActivated ? 'false' : 'true',
     });
-
     const gumroadResponse = await fetch('https://api.gumroad.com/v2/licenses/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
