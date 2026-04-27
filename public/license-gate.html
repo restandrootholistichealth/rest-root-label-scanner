@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unlock Your Label Scanner — Rest & Root</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --cream: #FAF6F0;
+    --sage: #7A9E7E;
+    --deep-sage: #5C7A60;
+    --bark: #5C3D2E;
+    --warm-brown: #8B6F5C;
+    --light-sage: #EEF4EE;
+    --blush: #E8D5C4;
+    --error: #C0392B;
+  }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--bark);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    line-height: 1.6;
+  }
+  .gate-container {
+    width: 100%;
+    max-width: 480px;
+    background: white;
+    border-radius: 24px;
+    padding: 48px 36px;
+    box-shadow: 0 20px 60px rgba(92, 61, 46, 0.08);
+    text-align: center;
+  }
+  .leaf { font-size: 32px; margin-bottom: 16px; opacity: 0.7; }
+  .brand {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--sage);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    color: var(--bark);
+  }
+  h1 em { font-style: italic; color: var(--sage); }
+  .subtitle {
+    font-size: 15px;
+    color: var(--warm-brown);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+  .input-group { margin-bottom: 20px; text-align: left; }
+  label {
+    display: block;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--deep-sage);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 16px 18px;
+    border: 2px solid var(--light-sage);
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--bark);
+    background: var(--cream);
+    transition: all 0.2s ease;
+    letter-spacing: 0.05em;
+  }
+  input[type="text"]:focus {
+    outline: none;
+    border-color: var(--sage);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(122, 158, 126, 0.1);
+  }
+  input[type="text"]::placeholder { color: var(--blush); letter-spacing: 0.05em; }
+  button {
+    width: 100%;
+    padding: 16px;
+    background: var(--sage);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 16px;
+  }
+  button:hover:not(:disabled) {
+    background: var(--deep-sage);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(122, 158, 126, 0.2);
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .help-text {
+    font-size: 13px;
+    color: var(--warm-brown);
+    line-height: 1.6;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--light-sage);
+  }
+  .help-text a { color: var(--sage); text-decoration: underline; font-weight: 500; }
+  .help-text a:hover { color: var(--deep-sage); }
+  .message {
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .message.error {
+    background: #FCEBEA;
+    color: var(--error);
+    border: 1px solid #F0C4BF;
+    display: block;
+  }
+  .message.success {
+    background: var(--light-sage);
+    color: var(--deep-sage);
+    border: 1px solid var(--sage);
+    display: block;
+  }
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .purchase-link {
+    display: inline-block;
+    margin-top: 8px;
+    color: var(--sage);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 2px solid var(--blush);
+    padding-bottom: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="gate-container">
+  <div class="leaf">🌿</div>
+  <div class="brand">Rest & Root Holistic Health</div>
+  <h1>Unlock Your <em>Label Scanner</em></h1>
+  <p class="subtitle">
+    Enter your license key once and you're in. No more passwords, no more hassle — your scanner will just work.
+  </p>
+
+  <div class="message" id="message"></div>
+
+  <div class="input-group">
+    <label for="license-key">Your License Key</label>
+    <input
+      type="text"
+      id="license-key"
+      placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+      autocomplete="off"
+      spellcheck="false"
+    />
+  </div>
+
+  <button id="unlock-btn" onclick="verifyLicense()">Unlock Scanner</button>
+
+  <div class="help-text">
+    <strong>Where do I find my license key?</strong><br>
+    Check your Gumroad receipt email or your Gumroad library — it's on the page where you completed your purchase.
+    <br><br>
+    Don't have access yet?
+    <a href="https://restandrootholistic.gumroad.com/l/scanner" class="purchase-link">Get the Label Scanner →</a>
+  </div>
+</div>
+
+<script>
+  window.addEventListener('DOMContentLoaded', async () => {
+    const savedKey = localStorage.getItem('rr_license_key');
+    if (savedKey) {
+      try {
+        const response = await fetch('/api/verify-license', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ licenseKey: savedKey, alreadyActivated: true }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          window.location.href = '/scanner';
+        } else {
+          localStorage.removeItem('rr_license_key');
+          showMessage(data.message || 'Your license is no longer active.', 'error');
+        }
+      } catch (e) {
+        window.location.href = '/scanner';
+      }
+    }
+  });
+
+  async function verifyLicense() {
+    const input = document.getElementById('license-key');
+    const btn = document.getElementById('unlock-btn');
+    const key = input.value.trim();
+
+    if (!key) {
+      showMessage('Please enter your license key.', 'error');
+      input.focus();
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Verifying...';
+    hideMessage();
+
+    try {
+      const response = await fetch('/api/verify-license', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ licenseKey: key, alreadyActivated: false }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        localStorage.setItem('rr_license_key', key);
+        if (data.buyerEmail) {
+          localStorage.setItem('rr_buyer_email', data.buyerEmail);
+        }
+        showMessage('🌿 You\'re in! Redirecting to your scanner...', 'success');
+        setTimeout(() => {
+          window.location.href = '/scanner';
+        }, 1200);
+      } else {
+        showMessage(data.message || 'That key didn\'t work. Please try again.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = 'Unlock Scanner';
+      }
+    } catch (err) {
+      showMessage('Connection issue — please try again in a moment.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Unlock Scanner';
+    }
+  }
+
+  document.getElementById('license-key').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') verifyLicense();
+  });
+
+  function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = 'message ' + type;
+  }
+
+  function hideMessage() {
+    document.getElementById('message').className = 'message';
+  }
+</script>
+
+</body>
+</html>
