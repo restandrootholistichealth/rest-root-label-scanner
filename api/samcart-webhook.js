@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 if (!global.licenseKeys) {
   global.licenseKeys = {};
@@ -18,27 +18,10 @@ async function sendKeyEmail(email, name, licenseKey) {
   console.log('Recipient email:', email);
   console.log('Recipient name:', name);
   console.log('License key:', licenseKey);
-  console.log('GMAIL_USER env var:', process.env.GMAIL_USER ? 'SET' : 'MISSING');
-  console.log('GMAIL_APP_PASSWORD env var:', process.env.GMAIL_APP_PASSWORD ? 'SET' : 'MISSING');
+  console.log('RESEND_API_KEY env var:', process.env.RESEND_API_KEY ? 'SET' : 'MISSING');
 
   const firstName = name ? name.split(' ')[0] : 'there';
-
-  let transporter;
-  try {
-    console.log('Creating Nodemailer transporter...');
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-    });
-    console.log('Transporter created successfully');
-  } catch (transportErr) {
-    console.error('FAILED to create transporter:', transportErr.message);
-    console.error('Full transporter error:', JSON.stringify(transportErr, Object.getOwnPropertyNames(transportErr)));
-    throw transportErr;
-  }
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   const emailHtml = `
 <!DOCTYPE html>
@@ -123,23 +106,19 @@ async function sendKeyEmail(email, name, licenseKey) {
 </html>`;
 
   try {
-    console.log('Attempting to send email via Gmail SMTP...');
-    const result = await transporter.sendMail({
-      from: '"Lindsay | Rest & Root" <restandrootholistichealing@gmail.com>',
+    console.log('Attempting to send email via Resend...');
+    const result = await resend.emails.send({
+      from: 'Lindsay | Rest & Root <onboarding@resend.dev>',
       to: email,
       subject: '🌿 Your Rest & Root Label Scanner is ready!',
       html: emailHtml,
     });
     console.log('=== EMAIL SENT SUCCESSFULLY ===');
-    console.log('Message ID:', result.messageId);
-    console.log('Accepted by:', result.accepted);
-    console.log('Rejected by:', result.rejected);
+    console.log('Result:', JSON.stringify(result));
     return result;
   } catch (sendErr) {
     console.error('=== EMAIL SEND FAILED ===');
     console.error('Error message:', sendErr.message);
-    console.error('Error code:', sendErr.code);
-    console.error('Error response:', sendErr.response);
     console.error('Full error:', JSON.stringify(sendErr, Object.getOwnPropertyNames(sendErr)));
     throw sendErr;
   }
@@ -203,7 +182,7 @@ export default async function handler(req, res) {
       console.log(`Key email sent successfully to ${email}`);
       return res.status(200).json({ success: true, message: 'Key generated and email sent' });
     } catch (emailErr) {
-      console.error('Nodemailer email error:', emailErr);
+      console.error('Email error:', emailErr);
       console.log(`MANUAL KEY NEEDED: ${email} → ${licenseKey}`);
       return res.status(200).json({
         success: true,
