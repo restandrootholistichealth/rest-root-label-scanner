@@ -3,6 +3,7 @@
 // and sends it to the buyer via MailerLite transactional email.
 
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 
 // Simple in-memory key store — in production this would be a database
 // For now we store keys in a global object that persists per Vercel instance
@@ -21,7 +22,15 @@ function generateLicenseKey() {
 
 async function sendKeyEmail(email, name, licenseKey) {
   const firstName = name ? name.split(' ')[0] : 'there';
-  
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+
   const emailHtml = `
 <!DOCTYPE html>
 <html>
@@ -102,26 +111,14 @@ async function sendKeyEmail(email, name, licenseKey) {
     </div>
   </div>
 </body>
-</html>
-  `;
+</html>`;
 
-  const response = await fetch('https://connect.mailerlite.com/api/emails', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.MAILERLITE_API_KEY}`,
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify({
-      from: 'restandrootholistichealing@gmail.com',
-      from_name: 'Lindsay | Rest & Root',
-      to: [{ email: email, name: name || '' }],
-      subject: '🌿 Your Rest & Root Label Scanner is ready!',
-      html: emailHtml,
-    }),
+  return transporter.sendMail({
+    from: '"Lindsay | Rest & Root" <restandrootholistichealing@gmail.com>',
+    to: email,
+    subject: '🌿 Your Rest & Root Label Scanner is ready!',
+    html: emailHtml,
   });
-
-  return response;
 }
 
 export default async function handler(req, res) {
@@ -183,23 +180,19 @@ export default async function handler(req, res) {
     console.log(`Generated key ${licenseKey} for ${email}`);
 
     // Send the key email via MailerLite
-    const emailResponse = await sendKeyEmail(email, name, licenseKey);
-    
-    if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      console.error('MailerLite email error:', errorText);
-      // Still return success to SamCart — we don't want to retry the webhook
-      // Log the key so we can manually send it if needed
-      console.log(`MANUAL KEY NEEDED: ${email} → ${licenseKey}`);
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Key generated but email failed — check logs',
-        key: licenseKey 
-      });
-    }
-
-    console.log(`Key email sent successfully to ${email}`);
-    return res.status(200).json({ success: true, message: 'Key generated and email sent' });
+   try {
+  await sendKeyEmail(email, name, licenseKey);
+  console.log(`Key email sent successfully to ${email}`);
+  return res.status(200).json({ success: true, message: 'Key generated and email sent' });
+} catch (emailErr) {
+  console.error('Nodemailer email error:', emailErr);
+  console.log(`MANUAL KEY NEEDED: ${email} → ${licenseKey}`);
+  return res.status(200).json({
+    success: true,
+    message: 'Key generated but email failed — check logs',
+    key: licenseKey,
+  });
+}
 
   } catch (err) {
     console.error('Webhook handler error:', err);
