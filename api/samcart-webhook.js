@@ -1,3 +1,18 @@
+import crypto from 'crypto';
+import nodemailer from 'nodemailer';
+
+if (!global.licenseKeys) {
+  global.licenseKeys = {};
+}
+
+function generateLicenseKey() {
+  const segments = [];
+  for (let i = 0; i < 4; i++) {
+    segments.push(crypto.randomBytes(4).toString('hex').toUpperCase());
+  }
+  return segments.join('-');
+}
+
 async function sendKeyEmail(email, name, licenseKey) {
   console.log('=== sendKeyEmail START ===');
   console.log('Recipient email:', email);
@@ -127,5 +142,78 @@ async function sendKeyEmail(email, name, licenseKey) {
     console.error('Error response:', sendErr.response);
     console.error('Full error:', JSON.stringify(sendErr, Object.getOwnPropertyNames(sendErr)));
     throw sendErr;
+  }
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
+  }
+
+  try {
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch (e) { body = {}; }
+    }
+
+    console.log('SamCart webhook received:', JSON.stringify(body));
+
+    const email =
+      body?.customer?.email ||
+      body?.email ||
+      body?.billing_address?.email ||
+      body?.order?.customer?.email ||
+      null;
+
+    const name =
+      body?.customer?.name ||
+      body?.customer?.full_name ||
+      `${body?.customer?.first_name || ''} ${body?.customer?.last_name || ''}`.trim() ||
+      body?.name ||
+      body?.order?.customer?.name ||
+      '';
+
+    if (!email) {
+      console.error('No email found in webhook payload:', JSON.stringify(body));
+      return res.status(400).json({
+        success: false,
+        message: 'No customer email found in webhook payload'
+      });
+    }
+
+    const licenseKey = generateLicenseKey();
+
+    global.licenseKeys[licenseKey] = {
+      email: email.toLowerCase(),
+      name: name,
+      createdAt: new Date().toISOString(),
+      uses: 0,
+      maxUses: 3,
+    };
+
+    console.log(`Generated key ${licenseKey} for ${email}`);
+
+    try {
+      await sendKeyEmail(email, name, licenseKey);
+      console.log(`Key email sent successfully to ${email}`);
+      return res.status(200).json({ success: true, message: 'Key generated and email sent' });
+    } catch (emailErr) {
+      console.error('Nodemailer email error:', emailErr);
+      console.log(`MANUAL KEY NEEDED: ${email} → ${licenseKey}`);
+      return res.status(200).json({
+        success: true,
+        message: 'Key generated but email failed — check logs',
+        key: licenseKey,
+      });
+    }
+
+  } catch (err) {
+    console.error('Webhook handler error:', err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 }
