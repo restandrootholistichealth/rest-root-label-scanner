@@ -1,35 +1,29 @@
-// api/samcart-webhook.js
-// Receives SamCart purchase webhooks, generates a unique license key,
-// and sends it to the buyer via MailerLite transactional email.
-
-import crypto from 'crypto';
-import nodemailer from 'nodemailer';
-
-// Simple in-memory key store — in production this would be a database
-// For now we store keys in a global object that persists per Vercel instance
-if (!global.licenseKeys) {
-  global.licenseKeys = {};
-}
-
-function generateLicenseKey() {
-  // Generates a key in format: XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX
-  const segments = [];
-  for (let i = 0; i < 4; i++) {
-    segments.push(crypto.randomBytes(4).toString('hex').toUpperCase());
-  }
-  return segments.join('-');
-}
-
 async function sendKeyEmail(email, name, licenseKey) {
+  console.log('=== sendKeyEmail START ===');
+  console.log('Recipient email:', email);
+  console.log('Recipient name:', name);
+  console.log('License key:', licenseKey);
+  console.log('GMAIL_USER env var:', process.env.GMAIL_USER ? 'SET' : 'MISSING');
+  console.log('GMAIL_APP_PASSWORD env var:', process.env.GMAIL_APP_PASSWORD ? 'SET' : 'MISSING');
+
   const firstName = name ? name.split(' ')[0] : 'there';
 
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  });
+  let transporter;
+  try {
+    console.log('Creating Nodemailer transporter...');
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    });
+    console.log('Transporter created successfully');
+  } catch (transportErr) {
+    console.error('FAILED to create transporter:', transportErr.message);
+    console.error('Full transporter error:', JSON.stringify(transportErr, Object.getOwnPropertyNames(transportErr)));
+    throw transportErr;
+  }
 
   const emailHtml = `
 <!DOCTYPE html>
@@ -113,89 +107,25 @@ async function sendKeyEmail(email, name, licenseKey) {
 </body>
 </html>`;
 
-  return transporter.sendMail({
-    from: '"Lindsay | Rest & Root" <restandrootholistichealing@gmail.com>',
-    to: email,
-    subject: '🌿 Your Rest & Root Label Scanner is ready!',
-    html: emailHtml,
-  });
-}
-
-export default async function handler(req, res) {
-  // Allow CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, message: 'Method not allowed' });
-  }
-
   try {
-    let body = req.body;
-    if (typeof body === 'string') {
-      try { body = JSON.parse(body); } catch (e) { body = {}; }
-    }
-
-    console.log('SamCart webhook received:', JSON.stringify(body));
-
-    // Extract buyer info from SamCart webhook payload
-    // SamCart sends different formats — we handle the most common ones
-    const email = 
-      body?.customer?.email || 
-      body?.email ||
-      body?.billing_address?.email ||
-      body?.order?.customer?.email ||
-      null;
-
-    const name = 
-      body?.customer?.name ||
-      body?.customer?.full_name ||
-      `${body?.customer?.first_name || ''} ${body?.customer?.last_name || ''}`.trim() ||
-      body?.name ||
-      body?.order?.customer?.name ||
-      '';
-
-    if (!email) {
-      console.error('No email found in webhook payload:', JSON.stringify(body));
-      return res.status(400).json({ 
-        success: false, 
-        message: 'No customer email found in webhook payload' 
-      });
-    }
-
-    // Generate a unique license key for this buyer
-    const licenseKey = generateLicenseKey();
-
-    // Store the key (email → key mapping)
-    global.licenseKeys[licenseKey] = {
-      email: email.toLowerCase(),
-      name: name,
-      createdAt: new Date().toISOString(),
-      uses: 0,
-      maxUses: 3,
-    };
-
-    console.log(`Generated key ${licenseKey} for ${email}`);
-
-    // Send the key email via MailerLite
-   try {
-  await sendKeyEmail(email, name, licenseKey);
-  console.log(`Key email sent successfully to ${email}`);
-  return res.status(200).json({ success: true, message: 'Key generated and email sent' });
-} catch (emailErr) {
-  console.error('Nodemailer email error:', emailErr);
-  console.log(`MANUAL KEY NEEDED: ${email} → ${licenseKey}`);
-  return res.status(200).json({
-    success: true,
-    message: 'Key generated but email failed — check logs',
-    key: licenseKey,
-  });
-}
-
-  } catch (err) {
-    console.error('Webhook handler error:', err);
-    return res.status(500).json({ success: false, message: err.message });
+    console.log('Attempting to send email via Gmail SMTP...');
+    const result = await transporter.sendMail({
+      from: '"Lindsay | Rest & Root" <restandrootholistichealing@gmail.com>',
+      to: email,
+      subject: '🌿 Your Rest & Root Label Scanner is ready!',
+      html: emailHtml,
+    });
+    console.log('=== EMAIL SENT SUCCESSFULLY ===');
+    console.log('Message ID:', result.messageId);
+    console.log('Accepted by:', result.accepted);
+    console.log('Rejected by:', result.rejected);
+    return result;
+  } catch (sendErr) {
+    console.error('=== EMAIL SEND FAILED ===');
+    console.error('Error message:', sendErr.message);
+    console.error('Error code:', sendErr.code);
+    console.error('Error response:', sendErr.response);
+    console.error('Full error:', JSON.stringify(sendErr, Object.getOwnPropertyNames(sendErr)));
+    throw sendErr;
   }
 }
