@@ -108,7 +108,7 @@ async function sendKeyEmail(email, name, licenseKey) {
   try {
     console.log('Attempting to send email via Resend...');
     const result = await resend.emails.send({
-      from: 'Lindsay | Rest & Root <lindsay@restandrootholistic.com>',
+      from: 'Lindsay | Rest & Root <lindsay@mail.restandrootholistic.com>',
 replyTo: 'restandrootholistichealth@gmail.com',
       to: email,
       subject: '🌿 Your Rest & Root Label Scanner is ready!',
