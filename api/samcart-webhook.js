@@ -1,27 +1,12 @@
 import crypto from 'crypto';
 import { Resend } from 'resend';
 
-if (!global.licenseKeys) {
-  global.licenseKeys = {};
-}
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-function generateLicenseKey() {
-  const segments = [];
-  for (let i = 0; i < 4; i++) {
-    segments.push(crypto.randomBytes(4).toString('hex').toUpperCase());
-  }
-  return segments.join('-');
-}
+const SCANNER_PASSWORD = 'RootScanner2025';
 
-async function sendKeyEmail(email, name, licenseKey) {
-  console.log('=== sendKeyEmail START ===');
-  console.log('Recipient email:', email);
-  console.log('Recipient name:', name);
-  console.log('License key:', licenseKey);
-  console.log('RESEND_API_KEY env var:', process.env.RESEND_API_KEY ? 'SET' : 'MISSING');
-
+async function sendPasswordEmail(email, name) {
   const firstName = name ? name.split(' ')[0] : 'there';
-  const resend = new Resend(process.env.RESEND_API_KEY);
 
   const emailHtml = `
 <!DOCTYPE html>
@@ -39,7 +24,7 @@ async function sendKeyEmail(email, name, licenseKey) {
     p { font-size: 15px; color: #8B6F5C; line-height: 1.6; margin: 0 0 16px; }
     .key-box { background: #EEF4EE; border: 2px dashed #7A9E7E; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0; }
     .key-label { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #7A9E7E; margin-bottom: 8px; }
-    .key { font-size: 18px; font-weight: bold; color: #5C3D2E; letter-spacing: 0.1em; word-break: break-all; }
+    .key { font-size: 24px; font-weight: bold; color: #5C3D2E; letter-spacing: 0.1em; }
     .button { display: block; background: #7A9E7E; color: white; text-decoration: none; text-align: center; padding: 16px 24px; border-radius: 12px; font-size: 15px; font-weight: bold; margin: 24px 0; }
     .steps { background: #FAF6F0; border-radius: 12px; padding: 20px; margin: 24px 0; }
     .step { display: flex; align-items: flex-start; margin-bottom: 12px; font-size: 14px; color: #5C3D2E; }
@@ -57,11 +42,11 @@ async function sendKeyEmail(email, name, licenseKey) {
       
       <h1>You're in, ${firstName}! 🎉</h1>
       
-      <p>Welcome to the Rest & Root Label Scanner family. Your unique license key is below — you'll only need this once.</p>
+      <p>Welcome to the Rest & Root Label Scanner family. Your password to access the scanner is below.</p>
 
       <div class="key-box">
-        <div class="key-label">Your License Key</div>
-        <div class="key">${licenseKey}</div>
+        <div class="key-label">Your Password</div>
+        <div class="key">${SCANNER_PASSWORD}</div>
       </div>
 
       <a href="https://scanner.restandrootholistic.com" class="button">
@@ -75,15 +60,13 @@ async function sendKeyEmail(email, name, licenseKey) {
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <div>Paste your license key from above into the unlock box</div>
+          <div>Type your password from above into the unlock box</div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <div>Click "Unlock Scanner" — that's it! You're in forever on this device</div>
+          <div>Click "Unlock Scanner" — you're in!</div>
         </div>
       </div>
-
-      <p style="font-size: 13px;">You can activate your scanner on up to <strong>3 devices</strong> total (phone + laptop + tablet, or any combination). Just paste your key each time.</p>
 
       <hr class="divider">
 
@@ -96,7 +79,7 @@ async function sendKeyEmail(email, name, licenseKey) {
       <hr class="divider">
 
       <div class="footer">
-        <p>Save this email — your license key lives here.<br>
+        <p>Save this email — your password lives here.<br>
         <a href="https://restandrootholistic.com">restandrootholistic.com</a> · 
         <a href="mailto:restandrootholistichealing@gmail.com">restandrootholistichealing@gmail.com</a></p>
       </div>
@@ -109,7 +92,7 @@ async function sendKeyEmail(email, name, licenseKey) {
     console.log('Attempting to send email via Resend...');
     const result = await resend.emails.send({
       from: 'Lindsay | Rest & Root <lindsay@mail.restandrootholistic.com>',
-replyTo: 'restandrootholistichealth@gmail.com',
+      replyTo: 'restandrootholistichealth@gmail.com',
       to: email,
       subject: '🌿 Your Rest & Root Label Scanner is ready!',
       html: emailHtml,
@@ -120,7 +103,6 @@ replyTo: 'restandrootholistichealth@gmail.com',
   } catch (sendErr) {
     console.error('=== EMAIL SEND FAILED ===');
     console.error('Error message:', sendErr.message);
-    console.error('Full error:', JSON.stringify(sendErr, Object.getOwnPropertyNames(sendErr)));
     throw sendErr;
   }
 }
@@ -166,29 +148,17 @@ export default async function handler(req, res) {
       });
     }
 
-    const licenseKey = generateLicenseKey();
-
-    global.licenseKeys[licenseKey] = {
-      email: email.toLowerCase(),
-      name: name,
-      createdAt: new Date().toISOString(),
-      uses: 0,
-      maxUses: 3,
-    };
-
-    console.log(`Generated key ${licenseKey} for ${email}`);
+    console.log(`Sending password email to ${email}`);
 
     try {
-      await sendKeyEmail(email, name, licenseKey);
-      console.log(`Key email sent successfully to ${email}`);
-      return res.status(200).json({ success: true, message: 'Key generated and email sent' });
+      await sendPasswordEmail(email, name);
+      console.log(`Password email sent successfully to ${email}`);
+      return res.status(200).json({ success: true, message: 'Password email sent' });
     } catch (emailErr) {
       console.error('Email error:', emailErr);
-      console.log(`MANUAL KEY NEEDED: ${email} → ${licenseKey}`);
       return res.status(200).json({
         success: true,
-        message: 'Key generated but email failed — check logs',
-        key: licenseKey,
+        message: 'Email failed — check logs',
       });
     }
 
