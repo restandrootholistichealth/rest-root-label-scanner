@@ -3,8 +3,8 @@
 <head>
     <script>
   (function() {
-    const savedKey = localStorage.getItem('rr_license_key');
-    if (!savedKey) {
+    const unlocked = localStorage.getItem('rr_unlocked');
+    if (unlocked !== 'true') {
       window.location.replace('/');
     }
   })();
