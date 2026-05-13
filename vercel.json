@@ -10,7 +10,8 @@
     { "src": "/api/samcart-webhook", "dest": "/api/samcart-webhook.js" },
     { "src": "/api/verify-license", "dest": "/api/verify-license.js" },
     { "src": "/api/scan", "dest": "/api/scan.js" },
-    { "src": "/", "dest": "/public/license-gate.html" },
+    { "src": "/", "dest": "/public/paywall.html" },
+    { "src": "/paywall(\\.html)?", "dest": "/public/paywall.html" },
     { "src": "/scanner(\\.html)?", "dest": "/public/scanner.html" },
     { "src": "/(.*)", "dest": "/public/$1" }
   ]
