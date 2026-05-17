@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get('key');
+    if (key === 'RootScanner2025') {
+      localStorage.setItem('rr_unlocked', 'true');
+    }
+    const unlocked = localStorage.getItem('rr_unlocked');
+    if (unlocked !== 'true') {
+      window.location.replace('/');
+    }
+  })();
+</script>
     <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rest & Root Label Scanner</title>
