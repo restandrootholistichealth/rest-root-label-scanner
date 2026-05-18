@@ -541,7 +541,7 @@
 
     // Twinr In-App Purchase URL scheme
     // This triggers the native purchase dialog
-    const purchaseUrl = `twinrpurchase://${productId}`;
+   const purchaseUrl = `inapppurchase://twinr.dev?product_id=${productId}`;
     
     // Try Twinr's purchase scheme
     window.location.href = purchaseUrl;
