@@ -28,11 +28,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
     overflow-x: hidden;
   }
 
-  /* Hero Section */
   .hero {
     width: 100%;
     background: linear-gradient(165deg, var(--bark) 0%, #3D2418 60%, #2A1A10 100%);
@@ -45,12 +43,10 @@
   .hero::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(ellipse at 70% 30%, rgba(122, 158, 126, 0.15) 0%, transparent 60%),
-                radial-gradient(ellipse at 30% 80%, rgba(201, 164, 100, 0.08) 0%, transparent 50%);
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 70% 30%, rgba(122,158,126,0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 30% 80%, rgba(201,164,100,0.08) 0%, transparent 50%);
     pointer-events: none;
   }
 
@@ -58,12 +54,12 @@
     font-size: 48px;
     margin-bottom: 16px;
     display: block;
-    filter: drop-shadow(0 4px 12px rgba(122, 158, 126, 0.4));
+    filter: drop-shadow(0 4px 12px rgba(122,158,126,0.4));
     animation: float 3s ease-in-out infinite;
   }
 
   @keyframes float {
-    0%, 100% { transform: translateY(0px); }
+    0%,100% { transform: translateY(0); }
     50% { transform: translateY(-6px); }
   }
 
@@ -77,52 +73,39 @@
   }
 
   .hero-title {
-    font-family: Georgia, 'Times New Roman', serif;
+    font-family: Georgia, serif;
     font-size: 32px;
-    font-weight: normal;
     color: var(--cream);
     line-height: 1.2;
     margin-bottom: 12px;
   }
 
-  .hero-title em {
-    font-style: italic;
-    color: var(--gold);
-  }
+  .hero-title em { font-style: italic; color: var(--gold); }
 
   .hero-subtitle {
     font-size: 15px;
-    color: rgba(250, 246, 240, 0.7);
+    color: rgba(250,246,240,0.7);
     line-height: 1.6;
     max-width: 280px;
     margin: 0 auto 24px;
   }
 
-  /* Feature Pills */
-  .features {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
+  .features { display: flex; flex-direction: column; gap: 8px; }
 
   .feature-pill {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 100px;
     padding: 8px 16px;
     font-size: 13px;
-    color: rgba(250, 246, 240, 0.85);
+    color: rgba(250,246,240,0.85);
     width: fit-content;
     margin: 0 auto;
   }
 
-  .feature-pill .icon { font-size: 15px; }
-
-  /* Pricing Section */
   .pricing-section {
     width: 100%;
     max-width: 420px;
@@ -139,13 +122,7 @@
     font-weight: 600;
   }
 
-  /* Pricing Cards */
-  .pricing-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
+  .pricing-cards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
 
   .pricing-card {
     background: white;
@@ -155,22 +132,15 @@
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
-    box-shadow: 0 2px 12px rgba(92, 61, 46, 0.06);
+    box-shadow: 0 2px 12px rgba(92,61,46,0.06);
   }
 
-  .pricing-card.selected {
-    border-color: var(--sage);
-    background: var(--light-sage);
-  }
-
-  .pricing-card.featured {
-    border-color: var(--gold);
-  }
+  .pricing-card.selected { border-color: var(--sage); background: var(--light-sage); }
+  .pricing-card.featured { border-color: var(--gold); }
 
   .badge {
     position: absolute;
-    top: -10px;
-    right: 16px;
+    top: -10px; right: 16px;
     background: var(--gold);
     color: white;
     font-size: 10px;
@@ -188,43 +158,10 @@
     margin-bottom: 4px;
   }
 
-  .card-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--bark);
-  }
+  .card-left { display: flex; align-items: center; }
 
-  .card-price {
-    text-align: right;
-  }
-
-  .price-amount {
-    font-family: Georgia, serif;
-    font-size: 22px;
-    font-weight: bold;
-    color: var(--bark);
-    line-height: 1;
-  }
-
-  .price-period {
-    font-size: 11px;
-    color: var(--warm-brown);
-  }
-
-  .card-detail {
-    font-size: 12px;
-    color: var(--warm-brown);
-  }
-
-  .card-detail.savings {
-    color: var(--deep-sage);
-    font-weight: 600;
-  }
-
-  /* Radio indicator */
   .radio {
-    width: 18px;
-    height: 18px;
+    width: 18px; height: 18px;
     border-radius: 50%;
     border: 2px solid #D0C4B8;
     display: inline-flex;
@@ -235,15 +172,11 @@
     transition: all 0.2s;
   }
 
-  .pricing-card.selected .radio {
-    border-color: var(--sage);
-    background: var(--sage);
-  }
+  .pricing-card.selected .radio { border-color: var(--sage); background: var(--sage); }
 
   .radio::after {
     content: '';
-    width: 6px;
-    height: 6px;
+    width: 6px; height: 6px;
     border-radius: 50%;
     background: white;
     opacity: 0;
@@ -252,12 +185,23 @@
 
   .pricing-card.selected .radio::after { opacity: 1; }
 
-  .card-left {
-    display: flex;
-    align-items: center;
+  .card-name { font-size: 15px; font-weight: 600; color: var(--bark); }
+
+  .card-price { text-align: right; }
+
+  .price-amount {
+    font-family: Georgia, serif;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--bark);
+    line-height: 1;
   }
 
-  /* CTA Buttons */
+  .price-period { font-size: 11px; color: var(--warm-brown); }
+
+  .card-detail { font-size: 12px; color: var(--warm-brown); }
+  .card-detail.savings { color: var(--deep-sage); font-weight: 600; }
+
   .cta-primary {
     width: 100%;
     padding: 18px;
@@ -269,15 +213,13 @@
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
-    letter-spacing: 0.02em;
     margin-bottom: 12px;
-    box-shadow: 0 4px 16px rgba(122, 158, 126, 0.35);
+    box-shadow: 0 4px 16px rgba(122,158,126,0.35);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 
-  .cta-primary:active {
-    transform: scale(0.98);
-    background: var(--deep-sage);
-  }
+  .cta-primary:active { transform: scale(0.98); background: var(--deep-sage); }
+  .cta-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
   .trial-note {
     text-align: center;
@@ -288,7 +230,6 @@
 
   .trial-note strong { color: var(--bark); }
 
-  /* Divider */
   .divider {
     display: flex;
     align-items: center;
@@ -296,11 +237,7 @@
     margin-bottom: 20px;
   }
 
-  .divider-line {
-    flex: 1;
-    height: 1px;
-    background: var(--blush);
-  }
+  .divider-line { flex: 1; height: 1px; background: var(--blush); }
 
   .divider-text {
     font-size: 11px;
@@ -309,7 +246,31 @@
     text-transform: uppercase;
   }
 
-  /* Trust Signals */
+  .about-section {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(92,61,46,0.06);
+  }
+
+  .about-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+
+  .avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--sage), var(--deep-sage));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .about-name { font-size: 14px; font-weight: 600; color: var(--bark); }
+  .about-title { font-size: 11px; color: var(--sage); font-weight: 500; }
+  .about-text { font-size: 13px; color: var(--warm-brown); line-height: 1.6; font-style: italic; }
+
   .trust-signals {
     display: flex;
     justify-content: center;
@@ -329,54 +290,23 @@
 
   .trust-icon { font-size: 18px; }
 
-  /* About Lindsay */
-  .about-section {
-    background: white;
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 12px rgba(92, 61, 46, 0.06);
-  }
-
-  .about-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-
-  .avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--sage), var(--deep-sage));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
-  }
-
-  .about-name {
+  .restore-btn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    color: var(--sage);
+    border: 2px solid var(--sage);
+    border-radius: 14px;
     font-size: 14px;
     font-weight: 600;
-    color: var(--bark);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    margin-bottom: 20px;
   }
 
-  .about-title {
-    font-size: 11px;
-    color: var(--sage);
-    font-weight: 500;
-  }
+  .restore-btn:active { background: var(--light-sage); }
 
-  .about-text {
-    font-size: 13px;
-    color: var(--warm-brown);
-    line-height: 1.6;
-    font-style: italic;
-  }
-
-  /* Footer Links */
   .footer-links {
     display: flex;
     justify-content: center;
@@ -402,11 +332,9 @@
     padding: 0 20px 40px;
   }
 
-  /* Loading state */
   .loading {
     display: inline-block;
-    width: 16px;
-    height: 16px;
+    width: 16px; height: 16px;
     border: 2px solid rgba(255,255,255,0.3);
     border-top-color: white;
     border-radius: 50%;
@@ -417,51 +345,60 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Already subscribed banner */
-  .restore-btn {
-    width: 100%;
-    padding: 14px;
-    background: transparent;
-    color: var(--sage);
-    border: 2px solid var(--sage);
-    border-radius: 14px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: inherit;
-    margin-bottom: 20px;
+  .error-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #C0392B;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 1000;
+    display: none;
+    max-width: 320px;
+    text-align: center;
   }
 
-  .restore-btn:active {
-    background: var(--light-sage);
+  .success-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--deep-sage);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 1000;
+    display: none;
+    max-width: 320px;
+    text-align: center;
   }
 </style>
 </head>
 <body>
 
-<!-- Hero -->
 <div class="hero">
   <span class="leaf-decoration">🌿</span>
   <div class="brand-name">Rest & Root Holistic Health</div>
   <h1 class="hero-title">Know What's <em>Really</em><br>In Your Products</h1>
   <p class="hero-subtitle">Snap a photo of any ingredient label and know instantly what's safe for your family.</p>
-  
   <div class="features">
-    <div class="feature-pill"><span class="icon">📸</span> Snap any label — results in seconds</div>
-    <div class="feature-pill"><span class="icon">🚫</span> See toxic ingredients instantly</div>
-    <div class="feature-pill"><span class="icon">🌿</span> Get clean swap suggestions</div>
+    <div class="feature-pill"><span>📸</span> Snap any label — results in seconds</div>
+    <div class="feature-pill"><span>🚫</span> See toxic ingredients instantly</div>
+    <div class="feature-pill"><span>🌿</span> Get clean swap suggestions</div>
   </div>
 </div>
 
-<!-- Pricing -->
 <div class="pricing-section">
-  
+
   <div class="section-label">Choose your plan</div>
 
   <div class="pricing-cards">
-    
-    <!-- Annual Plan -->
     <div class="pricing-card featured selected" id="annual-card" onclick="selectPlan('annual')">
       <div class="badge">Best Value</div>
       <div class="card-header">
@@ -477,7 +414,6 @@
       <div class="card-detail savings">Just $10/month — save 23% vs monthly</div>
     </div>
 
-    <!-- Monthly Plan -->
     <div class="pricing-card" id="monthly-card" onclick="selectPlan('monthly')">
       <div class="card-header">
         <div class="card-left">
@@ -491,11 +427,9 @@
       </div>
       <div class="card-detail">Flexible — cancel anytime</div>
     </div>
-
   </div>
 
-  <!-- CTA -->
-  <button class="cta-primary" id="cta-btn" onclick="startTrial()">
+  <button class="cta-primary" id="cta-btn" onclick="startPurchase()">
     Start Your 7-Day Free Trial 🌿
   </button>
 
@@ -503,14 +437,12 @@
     <strong>7 days free</strong> — then your selected plan begins. Cancel anytime.
   </div>
 
-  <!-- Divider -->
   <div class="divider">
     <div class="divider-line"></div>
     <div class="divider-text">Why Lindsay built this</div>
     <div class="divider-line"></div>
   </div>
 
-  <!-- About -->
   <div class="about-section">
     <div class="about-header">
       <div class="avatar">🌿</div>
@@ -524,98 +456,150 @@
     </div>
   </div>
 
-  <!-- Trust Signals -->
   <div class="trust-signals">
-    <div class="trust-item">
-      <span class="trust-icon">🔒</span>
-      <span>Secure<br>Payment</span>
-    </div>
-    <div class="trust-item">
-      <span class="trust-icon">❌</span>
-      <span>Cancel<br>Anytime</span>
-    </div>
-    <div class="trust-item">
-      <span class="trust-icon">🌿</span>
-      <span>7-Day<br>Free Trial</span>
-    </div>
-    <div class="trust-item">
-      <span class="trust-icon">📱</span>
-      <span>Works<br>Anywhere</span>
-    </div>
+    <div class="trust-item"><span class="trust-icon">🔒</span><span>Secure<br>Payment</span></div>
+    <div class="trust-item"><span class="trust-icon">❌</span><span>Cancel<br>Anytime</span></div>
+    <div class="trust-item"><span class="trust-icon">🌿</span><span>7-Day<br>Free Trial</span></div>
+    <div class="trust-item"><span class="trust-icon">📱</span><span>Works<br>Anywhere</span></div>
   </div>
 
-  <!-- Restore Purchases -->
   <button class="restore-btn" onclick="restorePurchases()">
     Already subscribed? Restore Purchases
   </button>
 
-  <!-- Footer Links -->
   <div class="footer-links">
-    <button class="footer-link" onclick="openPrivacy()">Privacy Policy</button>
-    <button class="footer-link" onclick="openTerms()">Terms of Use</button>
+    <button class="footer-link" onclick="window.open('https://restandrootholistic.com','_blank')">Privacy Policy</button>
+    <button class="footer-link" onclick="window.open('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/','_blank')">Terms of Use</button>
   </div>
 
 </div>
 
-<!-- Disclaimer -->
 <div class="disclaimer">
   For educational purposes only. Not medical advice.<br>
   Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period.<br>
-  Manage subscriptions in your App Store account settings.
+  Manage subscriptions in your App Store or Google Play account settings.
 </div>
+
+<div class="error-toast" id="errorToast"></div>
+<div class="success-toast" id="successToast"></div>
 
 <script>
   let selectedPlan = 'annual';
 
-  function selectPlan(plan) {
-    selectedPlan = plan;
-    
-    document.getElementById('annual-card').classList.remove('selected');
-    document.getElementById('monthly-card').classList.remove('selected');
-    document.getElementById(plan + '-card').classList.add('selected');
-    
-    const btn = document.getElementById('cta-btn');
-    if (plan === 'annual') {
-      btn.textContent = 'Start Your 7-Day Free Trial 🌿';
-    } else {
-      btn.textContent = 'Start Your 7-Day Free Trial 🌿';
+  // Product IDs — must match exactly what's in App Store Connect and Google Play
+  const PRODUCTS = {
+    monthly: 'com.restandroot.labelscanner.monthly',
+    annual: 'com.restandroot.labelscanner.yearly'
+  };
+
+  // Check if already unlocked on load
+  window.addEventListener('DOMContentLoaded', () => {
+    const unlocked = localStorage.getItem('rr_unlocked');
+    if (unlocked === 'true') {
+      window.location.replace('/scanner');
     }
+  });
+
+  // Listen for messages from Twinr native layer
+  window.addEventListener('message', (event) => {
+    console.log('Message received:', event.data);
+    try {
+      const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      
+      if (data.type === 'PURCHASE_SUCCESS' || data.success === true || data.purchased === true) {
+        handlePurchaseSuccess();
+      } else if (data.type === 'PURCHASE_ERROR' || data.error) {
+        handlePurchaseError(data.message || data.error || 'Purchase failed');
+      } else if (data.type === 'RESTORE_SUCCESS') {
+        handlePurchaseSuccess();
+      } else if (data.type === 'RESTORE_NONE') {
+        showError('No previous purchases found.');
+      }
+    } catch (e) {
+      console.log('Could not parse message:', e);
+    }
+  });
+
+  // Also listen for Twinr callback via URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('purchase') === 'success' || urlParams.get('unlocked') === 'true') {
+    handlePurchaseSuccess();
   }
 
-  function startTrial() {
+  function selectPlan(plan) {
+    selectedPlan = plan;
+    document.getElementById('annual-card').classList.toggle('selected', plan === 'annual');
+    document.getElementById('monthly-card').classList.toggle('selected', plan === 'monthly');
+  }
+
+  function startPurchase() {
     const btn = document.getElementById('cta-btn');
     btn.innerHTML = '<span class="loading"></span>Loading...';
     btn.disabled = true;
 
-    // Trigger Twinr in-app purchase
-    const productId = selectedPlan === 'annual' 
-      ? 'com.restandroot.labelscanner.yearly'
-      : 'com.restandroot.labelscanner.monthly';
+    const productId = PRODUCTS[selectedPlan];
+    console.log('Starting purchase for:', productId);
+
+    // Twinr In-App Purchase URL scheme
+    // This triggers the native purchase dialog
+    const purchaseUrl = `twinrpurchase://${productId}`;
     
-    // Twinr IAP URL scheme
-    const iapUrl = `inapppurchase://twinr.dev?product_id=${productId}`;
-    
-    // Try to trigger the purchase
-    window.location.href = iapUrl;
-    
+    // Try Twinr's purchase scheme
+    window.location.href = purchaseUrl;
+
+    // Fallback — also try postMessage approach
+    if (window.TwinrBridge) {
+      window.TwinrBridge.purchase(productId);
+    }
+
     // Reset button after delay in case purchase is cancelled
     setTimeout(() => {
       btn.innerHTML = 'Start Your 7-Day Free Trial 🌿';
       btn.disabled = false;
-    }, 3000);
+    }, 5000);
   }
 
   function restorePurchases() {
-    // Twinr restore purchases URL scheme
-    window.location.href = 'inapppurchase://twinr.dev?restore=true';
+    console.log('Restoring purchases...');
+    
+    // Try Twinr restore scheme
+    window.location.href = 'twinrpurchase://restore';
+    
+    if (window.TwinrBridge) {
+      window.TwinrBridge.restorePurchases();
+    }
+
+    showSuccess('Checking for previous purchases...');
   }
 
-  function openPrivacy() {
-    window.open('https://restandrootholistic.com', '_blank');
+  function handlePurchaseSuccess() {
+    console.log('Purchase successful! Unlocking scanner...');
+    localStorage.setItem('rr_unlocked', 'true');
+    showSuccess('🌿 Welcome! Unlocking your scanner...');
+    setTimeout(() => {
+      window.location.replace('/scanner');
+    }, 1500);
   }
 
-  function openTerms() {
-    window.open('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/', '_blank');
+  function handlePurchaseError(message) {
+    const btn = document.getElementById('cta-btn');
+    btn.innerHTML = 'Start Your 7-Day Free Trial 🌿';
+    btn.disabled = false;
+    showError(message || 'Something went wrong. Please try again.');
+  }
+
+  function showError(message) {
+    const toast = document.getElementById('errorToast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 4000);
+  }
+
+  function showSuccess(message) {
+    const toast = document.getElementById('successToast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 4000);
   }
 </script>
 
