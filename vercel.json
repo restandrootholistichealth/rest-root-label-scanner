@@ -1,12 +1,14 @@
 {
   "version": 2,
   "builds": [
+    { "src": "api/twinr-purchase.js", "use": "@vercel/node" },
     { "src": "api/samcart-webhook.js", "use": "@vercel/node" },
     { "src": "api/verify-license.js", "use": "@vercel/node" },
     { "src": "api/scan.js", "use": "@vercel/node" },
     { "src": "public/**", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/api/twinr-purchase", "dest": "/api/twinr-purchase.js" },
     { "src": "/api/samcart-webhook", "dest": "/api/samcart-webhook.js" },
     { "src": "/api/verify-license", "dest": "/api/verify-license.js" },
     { "src": "/api/scan", "dest": "/api/scan.js" },
