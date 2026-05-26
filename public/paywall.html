@@ -290,6 +290,75 @@
 
   .trust-icon { font-size: 18px; }
 
+  .promo-section {
+    width: 100%;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .promo-toggle {
+    background: none;
+    border: none;
+    color: var(--sage);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: underline;
+    padding: 8px 0;
+  }
+
+  .promo-input-wrap {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .promo-input-wrap input {
+    flex: 1;
+    padding: 12px 14px;
+    border: 2px solid var(--light-sage);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--bark);
+    background: white;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .promo-input-wrap input:focus {
+    outline: none;
+    border-color: var(--sage);
+  }
+
+  .promo-apply-btn {
+    padding: 12px 18px;
+    background: var(--sage);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+
+  .promo-apply-btn:active {
+    background: var(--deep-sage);
+  }
+
+  .promo-message {
+    font-size: 13px;
+    margin-top: 8px;
+    min-height: 20px;
+    font-weight: 500;
+  }
+
+  .promo-message.success { color: var(--deep-sage); }
+  .promo-message.error { color: #C0392B; }
+
   .restore-btn {
     width: 100%;
     padding: 14px;
@@ -467,6 +536,25 @@
     Already subscribed? Restore Purchases
   </button>
 
+  <!-- Promo Code Section -->
+  <div class="promo-section">
+    <button class="promo-toggle" onclick="togglePromo()">
+      Have a promo code? 🌿
+    </button>
+    <div class="promo-input-wrap" id="promoWrap" style="display:none;">
+      <input 
+        type="text" 
+        id="promoInput" 
+        placeholder="Enter promo code" 
+        autocomplete="off"
+        autocapitalize="characters"
+        spellcheck="false"
+      />
+      <button class="promo-apply-btn" onclick="applyPromoCode()">Apply</button>
+    </div>
+    <div class="promo-message" id="promoMessage"></div>
+  </div>
+
   <div class="footer-links">
     <button class="footer-link" onclick="window.open('https://restandrootholistic.com','_blank')">Privacy Policy</button>
     <button class="footer-link" onclick="window.open('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/','_blank')">Terms of Use</button>
@@ -488,9 +576,10 @@
 
   // Product IDs — must match exactly what's in App Store Connect and Google Play
   const PRODUCTS = {
-  monthly: 'TWIAP793',
-  annual: 'TWIAP510'
-};
+    monthly: 'com.restandroot.labelscanner.monthly',
+    annual: 'com.restandroot.labelscanner.yearly'
+  };
+
   // Check if already unlocked on load
   window.addEventListener('DOMContentLoaded', () => {
     const unlocked = localStorage.getItem('rr_unlocked');
@@ -541,7 +630,7 @@
 
     // Twinr In-App Purchase URL scheme
     // This triggers the native purchase dialog
-   const purchaseUrl = `inapppurchase://twinr.dev?product_id=${productId}`;
+    const purchaseUrl = `twinrpurchase://${productId}`;
     
     // Try Twinr's purchase scheme
     window.location.href = purchaseUrl;
@@ -585,6 +674,39 @@
     btn.innerHTML = 'Start Your 7-Day Free Trial 🌿';
     btn.disabled = false;
     showError(message || 'Something went wrong. Please try again.');
+  }
+
+  function togglePromo() {
+    const wrap = document.getElementById('promoWrap');
+    wrap.style.display = wrap.style.display === 'none' ? 'flex' : 'none';
+    if (wrap.style.display === 'flex') {
+      document.getElementById('promoInput').focus();
+    }
+  }
+
+  function applyPromoCode() {
+    const input = document.getElementById('promoInput');
+    const code = input.value.trim().toUpperCase();
+    const msg = document.getElementById('promoMessage');
+
+    if (!code) {
+      msg.textContent = 'Please enter a promo code.';
+      msg.className = 'promo-message error';
+      return;
+    }
+
+    msg.textContent = 'Applying...';
+    msg.className = 'promo-message';
+
+    // Trigger Twinr's promo code redemption
+    const promoUrl = `inapppurchase://twinr.dev?promo_code=${code}`;
+    window.location.href = promoUrl;
+
+    // Reset after delay in case it doesn't navigate
+    setTimeout(() => {
+      msg.textContent = 'If your code is valid, follow the prompts to complete redemption.';
+      msg.className = 'promo-message success';
+    }, 2000);
   }
 
   function showError(message) {
