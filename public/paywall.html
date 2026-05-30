@@ -576,8 +576,8 @@
 
   // Product IDs — must match exactly what's in App Store Connect and Google Play
   const PRODUCTS = {
-    monthly: 'com.restandroot.labelscanner.monthly',
-    annual: 'com.restandroot.labelscanner.yearly'
+    monthly: 'TWIAP793',
+    annual: 'TWIAP510'
   };
 
   // Check if already unlocked on load
@@ -630,7 +630,7 @@
 
     // Twinr In-App Purchase URL scheme
     // This triggers the native purchase dialog
-    const purchaseUrl = `twinrpurchase://${productId}`;
+    const purchaseUrl = `inapppurchase://twinr.dev?product_id=${productId}`;
     
     // Try Twinr's purchase scheme
     window.location.href = purchaseUrl;
@@ -651,7 +651,7 @@
     console.log('Restoring purchases...');
     
     // Try Twinr restore scheme
-    window.location.href = 'twinrpurchase://restore';
+    window.location.href = 'inapppurchase://twinr.dev?restore=true';
     
     if (window.TwinrBridge) {
       window.TwinrBridge.restorePurchases();
