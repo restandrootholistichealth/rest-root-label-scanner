@@ -186,7 +186,6 @@
   .pricing-card.selected .radio::after { opacity: 1; }
 
   .card-name { font-size: 15px; font-weight: 600; color: var(--bark); }
-
   .card-price { text-align: right; }
 
   .price-amount {
@@ -198,7 +197,6 @@
   }
 
   .price-period { font-size: 11px; color: var(--warm-brown); }
-
   .card-detail { font-size: 12px; color: var(--warm-brown); }
   .card-detail.savings { color: var(--deep-sage); font-weight: 600; }
 
@@ -345,9 +343,7 @@
     white-space: nowrap;
   }
 
-  .promo-apply-btn:active {
-    background: var(--deep-sage);
-  }
+  .promo-apply-btn:active { background: var(--deep-sage); }
 
   .promo-message {
     font-size: 13px;
@@ -416,8 +412,7 @@
 
   .error-toast {
     position: fixed;
-    bottom: 20px;
-    left: 50%;
+    bottom: 20px; left: 50%;
     transform: translateX(-50%);
     background: #C0392B;
     color: white;
@@ -433,8 +428,7 @@
 
   .success-toast {
     position: fixed;
-    bottom: 20px;
-    left: 50%;
+    bottom: 20px; left: 50%;
     transform: translateX(-50%);
     background: var(--deep-sage);
     color: white;
@@ -447,9 +441,31 @@
     max-width: 320px;
     text-align: center;
   }
+
+  /* Loading overlay while checking purchases */
+  .checking-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    z-index: 9999;
+  }
+
+  .checking-overlay .leaf { font-size: 48px; }
+  .checking-overlay p { font-size: 14px; color: var(--warm-brown); }
 </style>
 </head>
 <body>
+
+<!-- Loading overlay shown while checking subscription -->
+<div class="checking-overlay" id="checkingOverlay">
+  <div class="leaf">🌿</div>
+  <p>Checking your subscription...</p>
+</div>
 
 <div class="hero">
   <span class="leaf-decoration">🌿</span>
@@ -536,16 +552,15 @@
     Already subscribed? Restore Purchases
   </button>
 
-  <!-- Promo Code Section -->
   <div class="promo-section">
     <button class="promo-toggle" onclick="togglePromo()">
       Have a promo code? 🌿
     </button>
     <div class="promo-input-wrap" id="promoWrap" style="display:none;">
-      <input 
-        type="text" 
-        id="promoInput" 
-        placeholder="Enter promo code" 
+      <input
+        type="text"
+        id="promoInput"
+        placeholder="Enter promo code"
         autocomplete="off"
         autocapitalize="characters"
         spellcheck="false"
@@ -574,45 +589,76 @@
 <script>
   let selectedPlan = 'annual';
 
-  // Product IDs — must match exactly what's in App Store Connect and Google Play
   const PRODUCTS = {
     monthly: 'TWIAP793',
     annual: 'TWIAP510'
   };
 
-  // Check if already unlocked on load
-  window.addEventListener('DOMContentLoaded', () => {
-    const unlocked = localStorage.getItem('rr_unlocked');
-    if (unlocked === 'true') {
-      window.location.replace('/scanner');
-    }
-  });
+  function goToScanner() {
+    localStorage.setItem('rr_unlocked', 'true');
+    window.location.href = 'https://scanner.restandrootholistic.com/scanner';
+  }
 
-  // Listen for messages from Twinr native layer
+  function hideOverlay() {
+    const overlay = document.getElementById('checkingOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  // Check subscription status on load
+  async function checkSubscription() {
+    // Check URL params first (fastest)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('purchase') === 'success' || urlParams.get('unlocked') === 'true') {
+      goToScanner();
+      return;
+    }
+
+    // Check localStorage
+    if (localStorage.getItem('rr_unlocked') === 'true') {
+      goToScanner();
+      return;
+    }
+
+    // Check Twinr IAP purchases
+    try {
+      const purchases = await twinr_get_iap_purchases();
+      console.log('Twinr IAP purchases:', JSON.stringify(purchases));
+      if (Array.isArray(purchases) && purchases.length > 0) {
+        console.log('Active subscription found — redirecting to scanner');
+        goToScanner();
+        return;
+      }
+    } catch(e) {
+      console.log('twinr_get_iap_purchases error:', e);
+    }
+
+    // No subscription found — show paywall
+    hideOverlay();
+  }
+
+  // Run check immediately
+  checkSubscription();
+
+  // Listen for messages from Twinr
   window.addEventListener('message', (event) => {
     console.log('Message received:', event.data);
     try {
       const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-      
       if (data.type === 'PURCHASE_SUCCESS' || data.success === true || data.purchased === true) {
-        handlePurchaseSuccess();
-      } else if (data.type === 'PURCHASE_ERROR' || data.error) {
-        handlePurchaseError(data.message || data.error || 'Purchase failed');
+        goToScanner();
       } else if (data.type === 'RESTORE_SUCCESS') {
-        handlePurchaseSuccess();
+        goToScanner();
+      } else if (data.type === 'PURCHASE_ERROR' || data.error) {
+        hideOverlay();
+        showError(data.message || data.error || 'Purchase failed');
       } else if (data.type === 'RESTORE_NONE') {
+        hideOverlay();
         showError('No previous purchases found.');
       }
     } catch (e) {
       console.log('Could not parse message:', e);
     }
   });
-
-  // Also listen for Twinr callback via URL params
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('purchase') === 'success' || urlParams.get('unlocked') === 'true') {
-    handlePurchaseSuccess();
-  }
 
   function selectPlan(plan) {
     selectedPlan = plan;
@@ -628,19 +674,16 @@
     const productId = PRODUCTS[selectedPlan];
     console.log('Starting purchase for:', productId);
 
-    // Twinr In-App Purchase URL scheme
-    // This triggers the native purchase dialog
-    const purchaseUrl = `inapppurchase://twinr.dev?product_id=${productId}`;
-    
-    // Try Twinr's purchase scheme
-    window.location.href = purchaseUrl;
+    window.location.href = `inapppurchase://twinr.dev?product_id=${productId}`;
 
-    // Fallback — also try postMessage approach
     if (window.TwinrBridge) {
       window.TwinrBridge.purchase(productId);
     }
 
-    // Reset button after delay in case purchase is cancelled
+    // After purchase Twinr will call load_url which goes to /scanner
+    // /scanner sets rr_unlocked = true
+    // Next open paywall will see it and redirect
+
     setTimeout(() => {
       btn.innerHTML = 'Start Your 7-Day Free Trial 🌿';
       btn.disabled = false;
@@ -648,32 +691,21 @@
   }
 
   function restorePurchases() {
-    console.log('Restoring purchases...');
-    
-    // Try Twinr restore scheme
+    showSuccess('Checking for previous purchases...');
     window.location.href = 'inapppurchase://twinr.dev?restore=true';
-    
     if (window.TwinrBridge) {
       window.TwinrBridge.restorePurchases();
     }
-
-    showSuccess('Checking for previous purchases...');
-  }
-
-  function handlePurchaseSuccess() {
-    console.log('Purchase successful! Unlocking scanner...');
-    localStorage.setItem('rr_unlocked', 'true');
-    showSuccess('🌿 Welcome! Unlocking your scanner...');
-    setTimeout(() => {
-      window.location.replace('/scanner');
-    }, 1500);
-  }
-
-  function handlePurchaseError(message) {
-    const btn = document.getElementById('cta-btn');
-    btn.innerHTML = 'Start Your 7-Day Free Trial 🌿';
-    btn.disabled = false;
-    showError(message || 'Something went wrong. Please try again.');
+    // After restore Twinr will trigger load_url or update IAP data
+    // Re-check after a delay
+    setTimeout(async () => {
+      try {
+        const purchases = await twinr_get_iap_purchases();
+        if (Array.isArray(purchases) && purchases.length > 0) {
+          goToScanner();
+        }
+      } catch(e) {}
+    }, 3000);
   }
 
   function togglePromo() {
@@ -698,11 +730,8 @@
     msg.textContent = 'Applying...';
     msg.className = 'promo-message';
 
-    // Trigger Twinr's promo code redemption
-    const promoUrl = `inapppurchase://twinr.dev?promo_code=${code}`;
-    window.location.href = promoUrl;
+    window.location.href = `inapppurchase://twinr.dev?promo_code=${code}`;
 
-    // Reset after delay in case it doesn't navigate
     setTimeout(() => {
       msg.textContent = 'If your code is valid, follow the prompts to complete redemption.';
       msg.className = 'promo-message success';

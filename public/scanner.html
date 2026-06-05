@@ -1,16 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script>
-  (function() {
-    const params = new URLSearchParams(window.location.search);
-    const key = params.get('key');
-    if (key === 'RootScanner2025') {
-      localStorage.setItem('rr_unlocked', 'true');
-    }
-    const unlocked = localStorage.getItem('rr_unlocked');
-    if (unlocked !== 'true') {
-      window.location.replace('/');
+<script>
+  // Check Twinr IAP purchases before loading scanner
+  // This runs when Twinr redirects here via load_url after purchase
+  (async function() {
+    try {
+      // Check family/friend bypass key first
+      const params = new URLSearchParams(window.location.search);
+      const key = params.get('key');
+      if (key === 'RootScanner2025') {
+        localStorage.setItem('rr_unlocked', 'true');
+        return; // Allow through
+      }
+
+      // Check Twinr IAP purchases
+      const purchases = await twinr_get_iap_purchases();
+      console.log('Scanner IAP check:', JSON.stringify(purchases));
+
+      if (Array.isArray(purchases) && purchases.length > 0) {
+        // Active subscription confirmed — save status and stay on scanner
+        localStorage.setItem('rr_unlocked', 'true');
+        try { twinr_set_bool_local_data('rr_unlocked', true); } catch(e) {}
+        return; // Allow through
+      }
+
+      // No active subscription from Twinr — check localStorage fallback
+      const unlocked = localStorage.getItem('rr_unlocked');
+      if (unlocked === 'true') {
+        return; // Allow through
+      }
+
+      // No subscription found — redirect to paywall
+      window.location.href = '/';
+
+    } catch(e) {
+      // twinr_get_iap_purchases not available (web browser, not Twinr app)
+      console.log('IAP check error (likely web browser):', e);
+
+      // Fall back to localStorage check
+      const params = new URLSearchParams(window.location.search);
+      const key = params.get('key');
+      if (key === 'RootScanner2025') {
+        localStorage.setItem('rr_unlocked', 'true');
+        return;
+      }
+
+      const unlocked = localStorage.getItem('rr_unlocked');
+      if (unlocked !== 'true') {
+        window.location.href = '/';
+      }
     }
   })();
 </script>
@@ -24,7 +63,6 @@
 <meta name="apple-mobile-web-app-title" content="Label Scanner">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --cream: #FAF6F0;
@@ -437,7 +475,7 @@
     document.getElementById('results').innerHTML = '';
   }
 
- function handlePhoto(input) {
+  function handlePhoto(input) {
     const file = input.files[0];
     if (!file) return;
 
