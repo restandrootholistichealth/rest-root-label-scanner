@@ -53,6 +53,53 @@
     }
   })();
 </script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '27274020995621082');
+fbq('track', 'PageView');
+
+// Generate unique event ID for deduplication
+const _metaEventId = 'sub_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+// Fire browser pixel Subscribe event
+fbq('track', 'Subscribe', {}, { eventID: _metaEventId });
+
+// Also send server-side via Conversions API for more accurate tracking
+(function() {
+  try {
+    // Get Facebook cookies for matching
+    const getCookie = (name) => {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? match[2] : null;
+    };
+
+    fetch('/api/meta-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_name: 'Subscribe',
+        event_id: _metaEventId,
+        fbp: getCookie('_fbp'),
+        fbc: getCookie('_fbc'),
+        source_url: window.location.href,
+        client_agent: navigator.userAgent,
+      })
+    }).catch(() => {});
+  } catch(e) {}
+})();
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
     <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rest & Root Label Scanner</title>
@@ -296,6 +343,104 @@
     color: var(--deep-sage);
     margin-top: 10px;
     font-weight: 500;
+  }
+
+  .diy-tip {
+    background: #F0F7F0;
+    border-left: 3px solid var(--deep-sage);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--deep-sage);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  .symptom-card {
+    background: #FFF8F0;
+    border: 1px solid #E8D5C4;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .symptom-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--brown);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .symptom-text {
+    font-size: 13px;
+    color: #6a5a4a;
+    line-height: 1.7;
+  }
+
+  .education-block {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .education-block.body-impact {
+    background: #FEF9F0;
+    border-left: 2px solid var(--yellow);
+  }
+
+  .education-block.mineral {
+    background: #F0F4FE;
+    border-left: 2px solid #6B8DD6;
+  }
+
+  .education-block.carcinogen {
+    background: #FFF0F0;
+    border-left: 2px solid #E07070;
+  }
+
+  .education-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #8a7a6a;
+    margin-bottom: 4px;
+  }
+
+  .education-text {
+    color: #5a4a3a;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .share-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--brown);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+  }
+
+  .share-btn:active { background: #3D2418; transform: scale(0.98); }
+
+  .share-caption {
+    text-align: center;
+    font-size: 11px;
+    color: #8a7a6a;
+    margin-top: 6px;
+    margin-bottom: 20px;
   }
 
   .section-title {
@@ -556,13 +701,18 @@
     btn.innerHTML = '🔍 Scan These Ingredients';
   }
 
+  // Store last scan result for sharing
+  let lastScanData = null;
+
   function renderResults(data) {
+    lastScanData = data;
     const verdictClass = data.verdict === 'PUT IT BACK' ? 'danger' : data.verdict === 'CAUTION' ? 'caution' : 'safe';
+    const verdictEmoji = data.verdict === 'PUT IT BACK' ? '⛔' : data.verdict === 'CAUTION' ? '⚠️' : '✅';
     const verdictSub = data.verdict === 'PUT IT BACK' ? 'This product contains ingredients to avoid' : data.verdict === 'CAUTION' ? 'Some ingredients worth watching' : 'No major red flags found';
 
     let html = `
       <div class="verdict-banner ${verdictClass}">
-        <div class="verdict-text">${data.verdict}</div>
+        <div class="verdict-text">${verdictEmoji} ${data.verdict}</div>
         <div class="verdict-sub">${verdictSub}</div>
       </div>
     `;
@@ -571,9 +721,21 @@
       html += `<div class="extracted-box"><strong>Ingredients found in photo</strong>${data.extracted_ingredients}</div>`;
     }
 
+    // Summary card
     html += `<div class="summary-card">${data.summary}`;
     if (data.swap_tip) html += `<div class="swap-tip">💡 ${data.swap_tip}</div>`;
+    if (data.diy_recipe) html += `<div class="diy-tip">🌿 <strong>Make it yourself:</strong> ${data.diy_recipe}</div>`;
     html += `</div>`;
+
+    // Symptom connections
+    if (data.symptom_connections) {
+      html += `
+        <div class="symptom-card">
+          <div class="symptom-title">🔍 What your body may be feeling</div>
+          <div class="symptom-text">${data.symptom_connections}</div>
+        </div>
+      `;
+    }
 
     const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
     const safe = (data.flags || []).filter(f => f.risk === 'SAFE');
@@ -587,6 +749,28 @@
           <div class="flag-card ${cls}">
             <div class="flag-name">${f.name} <span class="risk-badge ${badgeCls}">${f.risk}</span></div>
             <div class="flag-reason">${f.reason}</div>
+
+            ${f.body_impact ? `
+              <div class="education-block body-impact">
+                <div class="education-label">💊 What this does in your body</div>
+                <div class="education-text">${f.body_impact}</div>
+              </div>
+            ` : ''}
+
+            ${f.mineral_depletion ? `
+              <div class="education-block mineral">
+                <div class="education-label">⚡ Minerals affected</div>
+                <div class="education-text">${f.mineral_depletion}</div>
+              </div>
+            ` : ''}
+
+            ${f.carcinogen_info ? `
+              <div class="education-block carcinogen">
+                <div class="education-label">⚠️ Carcinogen info</div>
+                <div class="education-text">${f.carcinogen_info}</div>
+              </div>
+            ` : ''}
+
             ${f.found_in ? `<div class="flag-found">Also hides in: ${f.found_in}</div>` : ''}
           </div>
         `;
@@ -599,10 +783,76 @@
     }
 
     if (flagged.length === 0) {
-      html += `<div class="flag-card safe"><div class="flag-reason">No major red flag ingredients detected!</div></div>`;
+      html += `<div class="flag-card safe"><div class="flag-reason">No major red flag ingredients detected! 🌿</div></div>`;
     }
 
+    // Share button
+    html += `
+      <button class="share-btn" onclick="shareResult()">
+        📲 Share This Scan
+      </button>
+      <div class="share-caption">Show others what's really in their products 🌿</div>
+    `;
+
     document.getElementById('results').innerHTML = html;
+  }
+
+  async function shareResult() {
+    if (!lastScanData) return;
+
+    const verdict = lastScanData.verdict;
+    const verdictEmoji = verdict === 'PUT IT BACK' ? '⛔' : verdict === 'CAUTION' ? '⚠️' : '✅';
+    const flagged = (lastScanData.flags || []).filter(f => f.risk !== 'SAFE');
+
+    // Build share text
+    let shareText = `${verdictEmoji} ${verdict}\n\n`;
+    shareText += `I just scanned a product with the Rest & Root Label Scanner 🌿\n\n`;
+
+    if (flagged.length > 0) {
+      shareText += `Flagged ingredients:\n`;
+      flagged.slice(0, 3).forEach(f => {
+        shareText += `🔴 ${f.name} — ${f.reason}\n`;
+      });
+      shareText += `\n`;
+    }
+
+    if (lastScanData.swap_tip) {
+      shareText += `💡 ${lastScanData.swap_tip}\n\n`;
+    }
+
+    shareText += `Know what's in YOUR products 👇\nrestandrootholistic.com\n\n@restandrootholistichealth\n#RestAndRoot #KnowWhatsInIt #ToxinFree #LabelScanner #CleanLiving #IngredientScanner`;
+
+    // Try native share sheet first (works great on mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Rest & Root Scan Result: ${verdict}`,
+          text: shareText,
+          url: 'https://restandrootholistic.com'
+        });
+        return;
+      } catch(e) {
+        // User cancelled or share failed — fall through to clipboard
+      }
+    }
+
+    // Fallback — copy to clipboard
+    try {
+      await navigator.clipboard.writeText(shareText);
+      // Show success toast
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+        background:#4A6E4E; color:white; padding:14px 20px; border-radius:10px;
+        font-size:14px; font-weight:600; z-index:9999; text-align:center;
+        max-width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.2);
+      `;
+      toast.textContent = '✅ Copied! Paste into Instagram, TikTok, or anywhere 🌿';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    } catch(e) {
+      alert('Copy this and share it:\n\n' + shareText);
+    }
   }
 </script>
 
