@@ -417,6 +417,87 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     line-height: 1.6;
   }
 
+  /* Expandable education */
+  .learn-more-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: 1px solid #D0C4B8;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--sage);
+    cursor: pointer;
+    margin-top: 8px;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+
+  .learn-more-btn:active { background: var(--light-sage); }
+
+  .education-panel {
+    display: none;
+    margin-top: 10px;
+    border-top: 1px solid #F0EBE6;
+    padding-top: 10px;
+  }
+
+  .education-panel.open { display: block; }
+
+  /* Chemical combination warning card */
+  .combination-card {
+    background: #FFF8E8;
+    border: 1px solid #F0C040;
+    border-left: 4px solid #E6A800;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .combination-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+
+  .combination-content { flex: 1; }
+
+  .combination-text {
+    font-size: 13px;
+    color: #5C3D2E;
+    line-height: 1.6;
+    font-weight: 500;
+  }
+
+  /* Sources */
+  .sources-block {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #F8F6F4;
+    border-radius: 6px;
+  }
+
+  .sources-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #8a7a6a;
+    margin-bottom: 6px;
+  }
+
+  .source-link {
+    display: block;
+    font-size: 11px;
+    color: var(--sage);
+    text-decoration: none;
+    margin-bottom: 3px;
+    line-height: 1.4;
+  }
+
+  .source-link:hover { text-decoration: underline; }
+
   .share-btn {
     width: 100%;
     padding: 16px;
@@ -704,6 +785,18 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
   // Store last scan result for sharing
   let lastScanData = null;
 
+  function toggleEducation(id) {
+    const panel = document.getElementById('edu-' + id);
+    const btn = document.getElementById('btn-' + id);
+    if (panel.classList.contains('open')) {
+      panel.classList.remove('open');
+      btn.textContent = '+ Learn more';
+    } else {
+      panel.classList.add('open');
+      btn.textContent = '− Show less';
+    }
+  }
+
   function renderResults(data) {
     lastScanData = data;
     const verdictClass = data.verdict === 'PUT IT BACK' ? 'danger' : data.verdict === 'CAUTION' ? 'caution' : 'safe';
@@ -721,20 +814,39 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       html += `<div class="extracted-box"><strong>Ingredients found in photo</strong>${data.extracted_ingredients}</div>`;
     }
 
-    // Summary card
     html += `<div class="summary-card">${data.summary}`;
     if (data.swap_tip) html += `<div class="swap-tip">💡 ${data.swap_tip}</div>`;
     if (data.diy_recipe) html += `<div class="diy-tip">🌿 <strong>Make it yourself:</strong> ${data.diy_recipe}</div>`;
     html += `</div>`;
 
-    // Symptom connections
-    if (data.symptom_connections) {
+    if (data.overall_symptoms) {
       html += `
         <div class="symptom-card">
           <div class="symptom-title">🔍 What your body may be feeling</div>
-          <div class="symptom-text">${data.symptom_connections}</div>
+          <div class="symptom-text">${data.overall_symptoms}</div>
         </div>
       `;
+    }
+
+    // Chemical combination warnings
+    if (data.combination_warnings && data.combination_warnings.length > 0) {
+      html += `<div class="section-title">⚗️ Chemical combination alerts</div>`;
+      data.combination_warnings.forEach(combo => {
+        html += `
+          <div class="combination-card">
+            <div class="combination-icon">⚗️</div>
+            <div class="combination-content">
+              <div class="combination-text">${combo.warning}</div>
+              ${combo.sources && combo.sources.length > 0 ? `
+                <div class="sources-block" style="margin-top:8px;">
+                  <div class="sources-label">📚 Sources</div>
+                  ${combo.sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      });
     }
 
     const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
@@ -742,36 +854,47 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
     if (flagged.length > 0) {
       html += `<div class="section-title">Flagged ingredients</div>`;
-      flagged.forEach(f => {
+      flagged.forEach((f, i) => {
         const cls = f.risk === 'AVOID' ? 'danger' : 'caution';
         const badgeCls = f.risk === 'AVOID' ? 'avoid' : 'caution';
+        const edu = f.education || {};
+        const hasEdu = edu.body_impact || edu.mineral_depletion || edu.carcinogen_info || edu.symptom_connections;
+        const hasSources = edu.sources && edu.sources.length > 0;
+
         html += `
           <div class="flag-card ${cls}">
             <div class="flag-name">${f.name} <span class="risk-badge ${badgeCls}">${f.risk}</span></div>
             <div class="flag-reason">${f.reason}</div>
-
-            ${f.body_impact ? `
-              <div class="education-block body-impact">
-                <div class="education-label">💊 What this does in your body</div>
-                <div class="education-text">${f.body_impact}</div>
-              </div>
-            ` : ''}
-
-            ${f.mineral_depletion ? `
-              <div class="education-block mineral">
-                <div class="education-label">⚡ Minerals affected</div>
-                <div class="education-text">${f.mineral_depletion}</div>
-              </div>
-            ` : ''}
-
-            ${f.carcinogen_info ? `
-              <div class="education-block carcinogen">
-                <div class="education-label">⚠️ Carcinogen info</div>
-                <div class="education-text">${f.carcinogen_info}</div>
-              </div>
-            ` : ''}
-
             ${f.found_in ? `<div class="flag-found">Also hides in: ${f.found_in}</div>` : ''}
+            ${hasEdu || hasSources ? `
+              <button class="learn-more-btn" id="btn-${i}" onclick="toggleEducation(${i})">+ Learn more</button>
+              <div class="education-panel" id="edu-${i}">
+                ${edu.body_impact ? `
+                  <div class="education-block body-impact">
+                    <div class="education-label">💊 What this does in your body</div>
+                    <div class="education-text">${edu.body_impact}</div>
+                  </div>` : ''}
+                ${edu.mineral_depletion ? `
+                  <div class="education-block mineral">
+                    <div class="education-label">⚡ Minerals affected</div>
+                    <div class="education-text">${edu.mineral_depletion}</div>
+                  </div>` : ''}
+                ${edu.carcinogen_info ? `
+                  <div class="education-block carcinogen">
+                    <div class="education-label">⚠️ Carcinogen info</div>
+                    <div class="education-text">${edu.carcinogen_info}</div>
+                  </div>` : ''}
+                ${edu.symptom_connections ? `
+                  <div class="education-block body-impact">
+                    <div class="education-label">🩺 Symptoms to watch for</div>
+                    <div class="education-text">${edu.symptom_connections}</div>
+                  </div>` : ''}
+                ${hasSources ? `
+                  <div class="sources-block">
+                    <div class="sources-label">📚 Sources</div>
+                    ${edu.sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}
+                  </div>` : ''}
+              </div>` : ''}
           </div>
         `;
       });
@@ -786,7 +909,6 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       html += `<div class="flag-card safe"><div class="flag-reason">No major red flag ingredients detected! 🌿</div></div>`;
     }
 
-    // Share button
     html += `
       <button class="share-btn" onclick="shareResult()">
         📲 Share This Scan
@@ -803,55 +925,134 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     const verdict = lastScanData.verdict;
     const verdictEmoji = verdict === 'PUT IT BACK' ? '⛔' : verdict === 'CAUTION' ? '⚠️' : '✅';
     const flagged = (lastScanData.flags || []).filter(f => f.risk !== 'SAFE');
+    const verdictColor = verdict === 'PUT IT BACK' ? '#C0392B' : verdict === 'CAUTION' ? '#E67E22' : '#4A6E4E';
 
-    // Build share text
-    let shareText = `${verdictEmoji} ${verdict}\n\n`;
-    shareText += `I just scanned a product with the Rest & Root Label Scanner 🌿\n\n`;
+    // Build branded image card using canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
 
-    if (flagged.length > 0) {
-      shareText += `Flagged ingredients:\n`;
-      flagged.slice(0, 3).forEach(f => {
-        shareText += `🔴 ${f.name} — ${f.reason}\n`;
+    // Background
+    ctx.fillStyle = '#FAF6F0';
+    ctx.fillRect(0, 0, 1080, 1080);
+
+    // Header
+    ctx.fillStyle = '#5C3D2E';
+    ctx.fillRect(0, 0, 1080, 140);
+    ctx.fillStyle = '#7A9E7E';
+    ctx.font = 'bold 22px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('REST & ROOT LABEL SCANNER 🌿', 540, 52);
+    ctx.fillStyle = '#C9A882';
+    ctx.font = '18px Arial, sans-serif';
+    ctx.fillText('Certified Naturopath Analysis', 540, 85);
+    ctx.fillStyle = 'rgba(250,246,240,0.5)';
+    ctx.font = '15px Arial, sans-serif';
+    ctx.fillText('restandrootholistic.com', 540, 118);
+
+    // Verdict banner
+    ctx.fillStyle = verdictColor;
+    ctx.beginPath();
+    ctx.roundRect(60, 160, 960, 100, 12);
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 40px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${verdictEmoji} ${verdict}`, 540, 225);
+
+    // Flagged ingredients
+    let yPos = 290;
+    const maxFlags = Math.min(flagged.length, 4);
+
+    if (flagged.length === 0) {
+      ctx.fillStyle = '#EEF4EE';
+      ctx.beginPath();
+      ctx.roundRect(60, yPos, 960, 100, 8);
+      ctx.fill();
+      ctx.fillStyle = '#4A6E4E';
+      ctx.font = 'bold 24px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('✅ No major red flags found!', 540, yPos + 58);
+      yPos += 120;
+    } else {
+      flagged.slice(0, maxFlags).forEach((f) => {
+        const bgColor = f.risk === 'AVOID' ? '#FCEBEA' : '#FEF3E2';
+        const bColor = f.risk === 'AVOID' ? '#C0392B' : '#E67E22';
+        ctx.fillStyle = bgColor;
+        ctx.beginPath();
+        ctx.roundRect(60, yPos, 960, 108, 8);
+        ctx.fill();
+        ctx.fillStyle = bColor;
+        ctx.fillRect(60, yPos, 5, 108);
+
+        // Badge
+        ctx.fillStyle = bColor;
+        ctx.beginPath();
+        ctx.roundRect(80, yPos + 14, f.risk === 'AVOID' ? 72 : 92, 26, 4);
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 13px Arial, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(f.risk, 90, yPos + 32);
+
+        ctx.fillStyle = '#5C3D2E';
+        ctx.font = 'bold 21px Arial, sans-serif';
+        ctx.fillText(f.name, 80, yPos + 66);
+
+        ctx.fillStyle = '#8B6F5C';
+        ctx.font = '15px Arial, sans-serif';
+        const reason = f.reason && f.reason.length > 68 ? f.reason.substring(0, 65) + '...' : (f.reason || '');
+        ctx.fillText(reason, 80, yPos + 93);
+
+        yPos += 120;
       });
-      shareText += `\n`;
     }
 
-    if (lastScanData.swap_tip) {
-      shareText += `💡 ${lastScanData.swap_tip}\n\n`;
-    }
+    // CTA strip
+    const ctaY = Math.max(yPos + 20, 860);
+    ctx.fillStyle = '#7A9E7E';
+    ctx.beginPath();
+    ctx.roundRect(60, ctaY, 960, 76, 38);
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 22px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Scan yours free → restandrootholistic.com', 540, ctaY + 46);
 
-    shareText += `Know what's in YOUR products 👇\nrestandrootholistic.com\n\n@restandrootholistichealth\n#RestAndRoot #KnowWhatsInIt #ToxinFree #LabelScanner #CleanLiving #IngredientScanner`;
+    // Bottom tag
+    ctx.fillStyle = '#8B6F5C';
+    ctx.font = '17px Arial, sans-serif';
+    ctx.fillText('@restandrootholistichealth  •  #KnowWhatsInIt  •  #RestAndRoot', 540, 1052);
 
-    // Try native share sheet first (works great on mobile)
-    if (navigator.share) {
-      try {
+    // Try to share image file (works on mobile)
+    try {
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const file = new File([blob], 'scan-result.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: `Rest & Root Scan Result: ${verdict}`,
-          text: shareText,
-          url: 'https://restandrootholistic.com'
+          files: [file],
+          text: `I just scanned a product I've been using FOREVER and look what came up 😳\n\n@restandrootholistichealth\n#KnowWhatsInIt #RestAndRoot #ToxinFree #LabelScanner`,
         });
         return;
-      } catch(e) {
-        // User cancelled or share failed — fall through to clipboard
       }
+    } catch(e) {
+      console.log('Image share failed:', e);
     }
 
-    // Fallback — copy to clipboard
+    // Fallback — download image
     try {
-      await navigator.clipboard.writeText(shareText);
-      // Show success toast
+      const link = document.createElement('a');
+      link.download = 'my-scan-result.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
       const toast = document.createElement('div');
-      toast.style.cssText = `
-        position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-        background:#4A6E4E; color:white; padding:14px 20px; border-radius:10px;
-        font-size:14px; font-weight:600; z-index:9999; text-align:center;
-        max-width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.2);
-      `;
-      toast.textContent = '✅ Copied! Paste into Instagram, TikTok, or anywhere 🌿';
+      toast.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#4A6E4E;color:white;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;z-index:9999;text-align:center;max-width:300px;`;
+      toast.textContent = '✅ Image saved! Share it on Instagram or TikTok 🌿';
       document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3500);
+      setTimeout(() => toast.remove(), 4000);
     } catch(e) {
-      alert('Copy this and share it:\n\n' + shareText);
+      alert('Screenshot this result and share it! Tag @restandrootholistichealth 🌿');
     }
   }
 </script>
