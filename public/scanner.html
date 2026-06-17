@@ -411,10 +411,10 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     margin-bottom: 4px;
   }
 
-  .education-text {
-    color: #5a4a3a;
+  .education-loading {
     font-size: 12px;
-    line-height: 1.6;
+    color: #8a7a6a;
+    padding: 8px 0;
   }
 
   /* Expandable education */
@@ -770,6 +770,7 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
         ? { image: { data: photoData, mediaType: photoMediaType } }
         : { ingredients: document.getElementById('ingredients').value.trim() };
 
+      // CALL 1 — Fast scan (verdict + flags)
       const response = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -777,15 +778,116 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       });
 
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
       const data = await response.json();
+
+      // Show results immediately
       renderResults(data);
+
+      btn.disabled = false;
+      btn.innerHTML = '🔍 Scan These Ingredients';
+
+      // CALL 2 — Load education in background
+      const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
+      if (flagged.length > 0) {
+        loadEducationInBackground(flagged);
+      }
+
     } catch (err) {
       results.innerHTML = `<div class="summary-card">Something went wrong — please try again! ${err.message}</div>`;
+      btn.disabled = false;
+      btn.innerHTML = '🔍 Scan These Ingredients';
     }
+  }
 
-    btn.disabled = false;
-    btn.innerHTML = '🔍 Scan These Ingredients';
+  async function loadEducationInBackground(flaggedIngredients) {
+    try {
+      const response = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          education_only: true,
+          flags_for_education: flaggedIngredients
+        })
+      });
+
+      if (!response.ok) return;
+      const eduData = await response.json();
+
+      // Inject overall symptoms if we got it
+      if (eduData.overall_symptoms) {
+        const symptomCard = document.getElementById('symptom-card');
+        if (symptomCard) {
+          symptomCard.innerHTML = `
+            <div class="symptom-title">🔍 What your body may be feeling</div>
+            <div class="symptom-text">${eduData.overall_symptoms}</div>
+          `;
+          symptomCard.style.display = 'block';
+        }
+      }
+
+      // Inject education into each learn more panel
+      if (eduData.education) {
+        flaggedIngredients.forEach((flag, i) => {
+          const panel = document.getElementById('edu-' + i);
+          if (!panel) return;
+
+          const edu = eduData.education[flag.name] || eduData.education[flag.name.toLowerCase()] || {};
+          const sources = flag.sources || [];
+
+          let eduHtml = '';
+
+          if (edu.body_impact) {
+            eduHtml += `
+              <div class="education-block body-impact">
+                <div class="education-label">💊 What this does in your body</div>
+                <div class="education-text">${edu.body_impact}</div>
+              </div>`;
+          }
+
+          if (edu.mineral_depletion) {
+            eduHtml += `
+              <div class="education-block mineral">
+                <div class="education-label">⚡ Minerals affected</div>
+                <div class="education-text">${edu.mineral_depletion}</div>
+              </div>`;
+          }
+
+          if (edu.carcinogen_info) {
+            eduHtml += `
+              <div class="education-block carcinogen">
+                <div class="education-label">⚠️ Carcinogen info</div>
+                <div class="education-text">${edu.carcinogen_info}</div>
+              </div>`;
+          }
+
+          if (edu.symptom_connections) {
+            eduHtml += `
+              <div class="education-block body-impact">
+                <div class="education-label">🩺 Symptoms to watch for</div>
+                <div class="education-text">${edu.symptom_connections}</div>
+              </div>`;
+          }
+
+          if (sources.length > 0) {
+            eduHtml += `
+              <div class="sources-block">
+                <div class="sources-label">📚 Sources</div>
+                ${sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}
+              </div>`;
+          }
+
+          if (eduHtml) {
+            panel.innerHTML = eduHtml;
+            // Show the learn more button now that content is ready
+            const btn = document.getElementById('btn-' + i);
+            if (btn) btn.style.display = 'inline-flex';
+          }
+        });
+      }
+
+    } catch(e) {
+      console.log('Education load failed:', e);
+    }
   }
 
   // Store last scan result for sharing
@@ -825,14 +927,8 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     if (data.diy_recipe) html += `<div class="diy-tip">🌿 <strong>Make it yourself:</strong> ${data.diy_recipe}</div>`;
     html += `</div>`;
 
-    if (data.overall_symptoms) {
-      html += `
-        <div class="symptom-card">
-          <div class="symptom-title">🔍 What your body may be feeling</div>
-          <div class="symptom-text">${data.overall_symptoms}</div>
-        </div>
-      `;
-    }
+    // Symptom card placeholder — fills in after education loads
+    html += `<div class="symptom-card" id="symptom-card" style="display:none;"></div>`;
 
     // Chemical combination warnings
     if (data.combination_warnings && data.combination_warnings.length > 0) {
@@ -864,44 +960,15 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       flagged.forEach((f, i) => {
         const cls = f.risk === 'AVOID' ? 'danger' : 'caution';
         const badgeCls = f.risk === 'AVOID' ? 'avoid' : 'caution';
-        const edu = f.education || {};
-        const hasEdu = edu.body_impact || edu.mineral_depletion || edu.carcinogen_info || edu.symptom_connections;
-        const hasSources = edu.sources && edu.sources.length > 0;
+        const hasSources = f.sources && f.sources.length > 0;
 
         html += `
           <div class="flag-card ${cls}">
             <div class="flag-name">${f.name} <span class="risk-badge ${badgeCls}">${f.risk}</span></div>
             <div class="flag-reason">${f.reason}</div>
             ${f.found_in ? `<div class="flag-found">Also hides in: ${f.found_in}</div>` : ''}
-            ${hasEdu || hasSources ? `
-              <button class="learn-more-btn" id="btn-${i}" onclick="toggleEducation(${i})">+ Learn more</button>
-              <div class="education-panel" id="edu-${i}">
-                ${edu.body_impact ? `
-                  <div class="education-block body-impact">
-                    <div class="education-label">💊 What this does in your body</div>
-                    <div class="education-text">${edu.body_impact}</div>
-                  </div>` : ''}
-                ${edu.mineral_depletion ? `
-                  <div class="education-block mineral">
-                    <div class="education-label">⚡ Minerals affected</div>
-                    <div class="education-text">${edu.mineral_depletion}</div>
-                  </div>` : ''}
-                ${edu.carcinogen_info ? `
-                  <div class="education-block carcinogen">
-                    <div class="education-label">⚠️ Carcinogen info</div>
-                    <div class="education-text">${edu.carcinogen_info}</div>
-                  </div>` : ''}
-                ${edu.symptom_connections ? `
-                  <div class="education-block body-impact">
-                    <div class="education-label">🩺 Symptoms to watch for</div>
-                    <div class="education-text">${edu.symptom_connections}</div>
-                  </div>` : ''}
-                ${hasSources ? `
-                  <div class="sources-block">
-                    <div class="sources-label">📚 Sources</div>
-                    ${edu.sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}
-                  </div>` : ''}
-              </div>` : ''}
+            <button class="learn-more-btn" id="btn-${i}" onclick="toggleEducation(${i})" style="display:none;">+ Learn more</button>
+            <div class="education-panel" id="edu-${i}"></div>
           </div>
         `;
       });
