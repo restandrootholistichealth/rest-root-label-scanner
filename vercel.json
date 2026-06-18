@@ -5,6 +5,7 @@
     { "src": "api/samcart-webhook.js", "use": "@vercel/node" },
     { "src": "api/verify-license.js", "use": "@vercel/node" },
     { "src": "api/scan.js", "use": "@vercel/node" },
+    { "src": "api/meta-events.js", "use": "@vercel/node" },
     { "src": "public/**", "use": "@vercel/static" }
   ],
   "routes": [
@@ -12,7 +13,8 @@
     { "src": "/api/samcart-webhook", "dest": "/api/samcart-webhook.js" },
     { "src": "/api/verify-license", "dest": "/api/verify-license.js" },
     { "src": "/api/scan", "dest": "/api/scan.js" },
-    { "src": "/", "dest": "/public/paywall.html" },
+    { "src": "/api/meta-events", "dest": "/api/meta-events.js" },
+    { "src": "/", "dest": "/public/index.html" },
     { "src": "/paywall(\\.html)?", "dest": "/public/paywall.html" },
     { "src": "/scanner(\\.html)?", "dest": "/public/scanner.html" },
     { "src": "/(.*)", "dest": "/public/$1" }

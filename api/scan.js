@@ -189,9 +189,9 @@ async function getFastScan(client, ingredients, image) {
 JSON format:
 {
   "extracted_ingredients": "comma separated ingredients from photo (photo scans only, else empty string)",
-  "summary": "2-3 warm plain English sentences. Like texting a friend.",
-  "swap_tip": "One sentence clean alternative or DIY with exact measurements. Empty if clean.",
-  "diy_recipe": "Simple recipe with exact measurements if applicable. Empty if not.",
+  "summary": "2-3 warm plain English sentences about the product overall. Do NOT include swap suggestions or DIY recipes in the summary — those go in swap_tip and diy_recipe fields only.",
+  "swap_tip": "One sentence recommending a specific clean product to swap to. No DIY here — just a product recommendation. Empty string if product is clean.",
+  "diy_recipe": "ONLY if a simple DIY version exists AND it's meaningfully better than buying clean. Exact recipe with measurements. Empty string if no good DIY exists OR if you already gave a product swap. Never duplicate what is in swap_tip.",
   "flags": [
     {
       "name": "exact ingredient name",
@@ -206,7 +206,7 @@ RED FLAGS — ALWAYS rate as AVOID: parabens, fragrance/parfum, DMDM Hydantoin, 
 
 CAUTION — ALWAYS rate as CAUTION: phenoxyethanol, dimethicone, carbomer, tocopheryl acetate synthetic, retinyl palmitate, aluminum compounds, fluoride, sodium benzoate.
 
-CRITICAL: Same ingredient ALWAYS gets same risk rating. Never rate a RED FLAG as anything other than AVOID.`;
+CRITICAL: Same ingredient ALWAYS gets same risk rating. Never rate a RED FLAG as anything other than AVOID. Never put DIY recipes in the summary field.`;
 
   let content = [];
   if (image) {

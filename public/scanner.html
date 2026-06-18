@@ -2,54 +2,45 @@
 <html lang="en">
 <head>
 <script>
-  // Check Twinr IAP purchases before loading scanner
-  // This runs when Twinr redirects here via load_url after purchase
+  // New flow: check subscription OR free scan token
   (async function() {
     try {
-      // Check family/friend bypass key first
       const params = new URLSearchParams(window.location.search);
-      const key = params.get('key');
-      if (key === 'RootScanner2025') {
-        localStorage.setItem('rr_unlocked', 'true');
-        return; // Allow through
-      }
 
-      // Check Twinr IAP purchases
-      const purchases = await twinr_get_iap_purchases();
-      console.log('Scanner IAP check:', JSON.stringify(purchases));
-
-      if (Array.isArray(purchases) && purchases.length > 0) {
-        // Active subscription confirmed — save status and stay on scanner
-        localStorage.setItem('rr_unlocked', 'true');
-        try { twinr_set_bool_local_data('rr_unlocked', true); } catch(e) {}
-        return; // Allow through
-      }
-
-      // No active subscription from Twinr — check localStorage fallback
-      const unlocked = localStorage.getItem('rr_unlocked');
-      if (unlocked === 'true') {
-        return; // Allow through
-      }
-
-      // No subscription found — redirect to paywall
-      window.location.href = '/';
-
-    } catch(e) {
-      // twinr_get_iap_purchases not available (web browser, not Twinr app)
-      console.log('IAP check error (likely web browser):', e);
-
-      // Fall back to localStorage check
-      const params = new URLSearchParams(window.location.search);
-      const key = params.get('key');
-      if (key === 'RootScanner2025') {
+      // Bypass key
+      if (params.get('key') === 'RootScanner2025') {
         localStorage.setItem('rr_unlocked', 'true');
         return;
       }
 
-      const unlocked = localStorage.getItem('rr_unlocked');
-      if (unlocked !== 'true') {
-        window.location.href = '/';
+      // Check active subscription
+      try {
+        const purchases = await twinr_get_iap_purchases();
+        if (Array.isArray(purchases) && purchases.length > 0) {
+          localStorage.setItem('rr_unlocked', 'true');
+          try { twinr_set_bool_local_data('rr_unlocked', true); } catch(e) {}
+          return;
+        }
+      } catch(e) {}
+
+      // Check localStorage subscription
+      if (localStorage.getItem('rr_unlocked') === 'true') return;
+
+      // Check free scan token — allow through if available
+      if (localStorage.getItem('rr_free_scan_available') === 'true') return;
+
+      // No subscription, no free scan — redirect to onboarding
+      window.location.href = '/';
+
+    } catch(e) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('key') === 'RootScanner2025') {
+        localStorage.setItem('rr_unlocked', 'true');
+        return;
       }
+      if (localStorage.getItem('rr_unlocked') === 'true') return;
+      if (localStorage.getItem('rr_free_scan_available') === 'true') return;
+      window.location.href = '/';
     }
   })();
 </script>
@@ -530,6 +521,69 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     margin-bottom: 20px;
   }
 
+  .share-btn-fb {
+    width: 100%;
+    padding: 14px;
+    background: #1877F2;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    letter-spacing: 0.5px;
+    transition: background 0.2s;
+  }
+
+  .share-btn-fb:active { background: #1565C0; transform: scale(0.98); }
+  .clean-celebration {
+    background: linear-gradient(135deg, #EEF4EE, #F0F7F0);
+    border: 2px solid var(--sage);
+    border-radius: 14px;
+    padding: 24px 20px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .clean-confetti {
+    font-size: 28px;
+    margin-bottom: 12px;
+    animation: bounce 0.6s ease-in-out;
+  }
+
+  @keyframes bounce {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .clean-headline {
+    font-family: Georgia, serif;
+    font-size: 22px;
+    font-weight: normal;
+    color: var(--deep-sage);
+    margin-bottom: 10px;
+  }
+
+  .clean-body {
+    font-size: 14px;
+    color: var(--brown);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+
+  .clean-encouragement {
+    font-size: 13px;
+    color: var(--deep-sage);
+    line-height: 1.6;
+    font-style: italic;
+    border-top: 1px solid rgba(122,158,126,0.2);
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+
   .section-title {
     font-size: 10px;
     letter-spacing: 3px;
@@ -610,13 +664,252 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
   }
 
   .hidden { display: none; }
+
+  /* FREE SCAN BANNER */
+  .free-scan-banner {
+    background: linear-gradient(135deg, var(--sage), var(--deep-sage));
+    padding: 10px 16px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    letter-spacing: 0.02em;
+  }
+
+  /* POST-SCAN PAYWALL OVERLAY */
+  .paywall-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(28, 18, 8, 0.85);
+    backdrop-filter: blur(4px);
+    z-index: 9998;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .paywall-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .paywall-sheet {
+    background: var(--cream);
+    border-radius: 24px 24px 0 0;
+    padding: 32px 24px 48px;
+    width: 100%;
+    max-width: 480px;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .paywall-overlay.visible .paywall-sheet {
+    transform: translateY(0);
+  }
+
+  .paywall-handle {
+    width: 36px;
+    height: 4px;
+    background: rgba(92,61,46,0.15);
+    border-radius: 2px;
+    margin: 0 auto 24px;
+  }
+
+  .paywall-headline {
+    font-family: Georgia, serif;
+    font-size: 26px;
+    font-weight: normal;
+    color: var(--bark);
+    text-align: center;
+    margin-bottom: 8px;
+    line-height: 1.25;
+  }
+
+  .paywall-sub {
+    font-size: 14px;
+    color: var(--warm-brown);
+    text-align: center;
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  .paywall-plans {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .paywall-plan {
+    border-radius: 14px;
+    padding: 16px 18px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+    background: white;
+    box-shadow: 0 2px 10px rgba(92,61,46,0.06);
+  }
+
+  .paywall-plan.featured {
+    border-color: var(--gold);
+  }
+
+  .paywall-plan.selected {
+    border-color: var(--sage);
+    background: var(--light-sage);
+  }
+
+  .paywall-plan-badge {
+    position: absolute;
+    top: -9px;
+    right: 14px;
+    background: var(--gold);
+    color: white;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 10px;
+    border-radius: 100px;
+  }
+
+  .paywall-plan-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+  }
+
+  .paywall-plan-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--bark);
+  }
+
+  .paywall-plan-price {
+    font-family: Georgia, serif;
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--bark);
+    text-align: right;
+    line-height: 1;
+  }
+
+  .paywall-plan-period {
+    font-size: 10px;
+    color: var(--warm-brown);
+    font-family: -apple-system, sans-serif;
+  }
+
+  .paywall-plan-detail {
+    font-size: 12px;
+    color: var(--deep-sage);
+    font-weight: 600;
+  }
+
+  .paywall-plan-detail.secondary {
+    color: var(--warm-brown);
+    font-weight: normal;
+  }
+
+  .paywall-cta {
+    width: 100%;
+    padding: 18px;
+    background: var(--sage);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 16px rgba(122,158,126,0.4);
+    transition: all 0.2s;
+  }
+
+  .paywall-cta:active { transform: scale(0.98); background: var(--deep-sage); }
+
+  .paywall-trust {
+    text-align: center;
+    font-size: 11px;
+    color: var(--warm-brown);
+    margin-bottom: 16px;
+  }
+
+  .paywall-no-thanks {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--warm-brown);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 8px;
+    text-decoration: underline;
+  }
 </style>
 </head>
 <body>
 
+<!-- Free scan banner — shows for non-subscribers on their free scan -->
+<div class="free-scan-banner" id="freeScanBanner" style="display:none;">
+  🌿 You have 1 free scan — make it count!
+</div>
+
 <div class="header">
   <h1>Rest & Root Label Scanner</h1>
   <p>Certified Naturopath & HTMA Practitioner</p>
+</div>
+
+<!-- POST-SCAN PAYWALL OVERLAY -->
+<div class="paywall-overlay" id="paywallOverlay">
+  <div class="paywall-sheet">
+    <div class="paywall-handle"></div>
+    <div class="paywall-headline">Want to keep scanning?</div>
+    <div class="paywall-sub">Join the people who actually know what's in their products.</div>
+
+    <div class="paywall-plans">
+      <!-- Annual — featured -->
+      <div class="paywall-plan featured selected" id="pw-annual" onclick="selectPaywallPlan('annual')">
+        <div class="paywall-plan-badge">Best Value</div>
+        <div class="paywall-plan-header">
+          <div class="paywall-plan-name">Annual Access</div>
+          <div>
+            <div class="paywall-plan-price">$120</div>
+            <div class="paywall-plan-period">/year</div>
+          </div>
+        </div>
+        <div class="paywall-plan-detail">Just $10/month — works out to less than a coffee a month ☕</div>
+      </div>
+
+      <!-- Monthly -->
+      <div class="paywall-plan" id="pw-monthly" onclick="selectPaywallPlan('monthly')">
+        <div class="paywall-plan-header">
+          <div class="paywall-plan-name">Monthly Access</div>
+          <div>
+            <div class="paywall-plan-price">$12.99</div>
+            <div class="paywall-plan-period">/month</div>
+          </div>
+        </div>
+        <div class="paywall-plan-detail secondary">Flexible — cancel anytime</div>
+      </div>
+    </div>
+
+    <div class="paywall-trust">7-day free trial included · No charge today · Cancel anytime</div>
+
+    <button class="paywall-cta" id="paywallCta" onclick="startPaywallPurchase()">
+      See My Options →
+    </button>
+
+    <button class="paywall-no-thanks" onclick="dismissPaywall()">
+      No thanks, I'll stick to one scan
+    </button>
+  </div>
 </div>
 
 <div class="main">
@@ -671,6 +964,84 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
   let photoData = null;
   let photoMediaType = null;
   let deferredPrompt = null;
+  let isSubscriber = false;
+  let paywallPlan = 'annual';
+
+  const PRODUCTS = {
+    monthly: 'TWIAP793',
+    annual: 'TWIAP510'
+  };
+
+  // Check if subscriber or free scan user
+  function initScanner() {
+    isSubscriber = localStorage.getItem('rr_unlocked') === 'true';
+    const hasFreeScan = localStorage.getItem('rr_free_scan_available') === 'true';
+    const freeScanUsed = localStorage.getItem('rr_free_scan_used') === 'true';
+
+    // Show free scan banner for non-subscribers
+    if (!isSubscriber && hasFreeScan && !freeScanUsed) {
+      document.getElementById('freeScanBanner').style.display = 'block';
+    }
+
+    // Track scanner open
+    try {
+      fbq('track', 'ViewContent', {
+        content_name: isSubscriber ? 'scanner_subscriber' : 'scanner_free_user'
+      });
+    } catch(e) {}
+  }
+
+  initScanner();
+
+  // Paywall plan selection
+  function selectPaywallPlan(plan) {
+    paywallPlan = plan;
+    document.getElementById('pw-annual').classList.toggle('selected', plan === 'annual');
+    document.getElementById('pw-monthly').classList.toggle('selected', plan === 'monthly');
+  }
+
+  // Show paywall after free scan
+  function showPaywall() {
+    const overlay = document.getElementById('paywallOverlay');
+    overlay.classList.add('visible');
+
+    // Track paywall view
+    try { fbq('track', 'ViewContent', { content_name: 'paywall_post_scan' }); } catch(e) {}
+  }
+
+  // Dismiss paywall
+  function dismissPaywall() {
+    const overlay = document.getElementById('paywallOverlay');
+    overlay.classList.remove('visible');
+  }
+
+  // Start purchase from paywall
+  function startPaywallPurchase() {
+    const productId = PRODUCTS[paywallPlan];
+    window.location.href = `inapppurchase://twinr.dev?product_id=${productId}`;
+    if (window.TwinrBridge) window.TwinrBridge.purchase(productId);
+
+    // Track CTA click
+    try { fbq('track', 'InitiateCheckout', { content_name: paywallPlan + '_trial' }); } catch(e) {}
+  }
+
+  // Listen for purchase success
+  window.addEventListener('message', (event) => {
+    try {
+      const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      if (data.type === 'PURCHASE_SUCCESS' || data.success === true || data.purchased === true) {
+        localStorage.setItem('rr_unlocked', 'true');
+        localStorage.removeItem('rr_free_scan_available');
+        localStorage.removeItem('rr_free_scan_used');
+        isSubscriber = true;
+        dismissPaywall();
+        document.getElementById('freeScanBanner').style.display = 'none';
+
+        // Track subscription
+        try { fbq('track', 'Subscribe'); } catch(e) {}
+      }
+    } catch(e) {}
+  });
 
   // PWA Install prompt
   window.addEventListener('beforeinstallprompt', (e) => {
@@ -785,6 +1156,18 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
       btn.disabled = false;
       btn.innerHTML = '🔍 Scan These Ingredients';
+
+      // If free scan user — mark free scan as used and show paywall
+      if (!isSubscriber) {
+        localStorage.setItem('rr_free_scan_used', 'true');
+        localStorage.removeItem('rr_free_scan_available');
+        document.getElementById('freeScanBanner').style.display = 'none';
+
+        // Wait 2 seconds so they can see the result first
+        setTimeout(() => {
+          showPaywall();
+        }, 2000);
+      }
 
       // CALL 2 — Load education in background
       const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
@@ -907,14 +1290,22 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
   function renderResults(data) {
     lastScanData = data;
-    const verdictClass = data.verdict === 'PUT IT BACK' ? 'danger' : data.verdict === 'CAUTION' ? 'caution' : 'safe';
-    const verdictEmoji = data.verdict === 'PUT IT BACK' ? '⛔' : data.verdict === 'CAUTION' ? '⚠️' : '✅';
-    const verdictSub = data.verdict === 'PUT IT BACK' ? 'This product contains ingredients to avoid' : data.verdict === 'CAUTION' ? 'Some ingredients worth watching' : 'No major red flags found';
+    const verdict = data.verdict;
+    const verdictClass = verdict === 'PUT IT BACK' ? 'danger' : verdict === 'CAUTION' ? 'caution' : 'safe';
+    const verdictEmoji = verdict === 'PUT IT BACK' ? '⛔' : verdict === 'CAUTION' ? '⚠️' : '✅';
+    const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
+    const safe = (data.flags || []).filter(f => f.risk === 'SAFE');
+
+    const verdictSubs = {
+      'PUT IT BACK': 'Okay we need to talk about this one.',
+      'CAUTION': 'Not the worst, but not the best either.',
+      'LOOKS CLEAN': 'Yes!! This one actually passed. 🎉'
+    };
 
     let html = `
       <div class="verdict-banner ${verdictClass}">
-        <div class="verdict-text">${verdictEmoji} ${data.verdict}</div>
-        <div class="verdict-sub">${verdictSub}</div>
+        <div class="verdict-text">${verdictEmoji} ${verdict}</div>
+        <div class="verdict-sub">${verdictSubs[verdict] || ''}</div>
       </div>
     `;
 
@@ -922,15 +1313,28 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       html += `<div class="extracted-box"><strong>Ingredients found in photo</strong>${data.extracted_ingredients}</div>`;
     }
 
-    html += `<div class="summary-card">${data.summary}`;
-    if (data.swap_tip) html += `<div class="swap-tip">💡 ${data.swap_tip}</div>`;
-    if (data.diy_recipe) html += `<div class="diy-tip">🌿 <strong>Make it yourself:</strong> ${data.diy_recipe}</div>`;
-    html += `</div>`;
+    if (verdict === 'LOOKS CLEAN') {
+      html += `
+        <div class="clean-celebration">
+          <div class="clean-confetti">🎉✨🌿✨🎉</div>
+          <div class="clean-headline">You found a good one!</div>
+          <div class="clean-body">${data.summary}</div>
+          <div class="clean-encouragement">
+            You're making better choices than you probably even realize.
+            Every clean product is a win. Keep this one in your rotation. 🌿
+          </div>
+          ${data.swap_tip ? `<div class="swap-tip">💡 ${data.swap_tip}</div>` : ''}
+        </div>
+      `;
+    } else {
+      html += `<div class="summary-card">${data.summary}`;
+      if (data.swap_tip) html += `<div class="swap-tip">💡 ${data.swap_tip}</div>`;
+      if (data.diy_recipe) html += `<div class="diy-tip">🌿 <strong>Make it yourself:</strong> ${data.diy_recipe}</div>`;
+      html += `</div>`;
+    }
 
-    // Symptom card placeholder — fills in after education loads
     html += `<div class="symptom-card" id="symptom-card" style="display:none;"></div>`;
 
-    // Chemical combination warnings
     if (data.combination_warnings && data.combination_warnings.length > 0) {
       html += `<div class="section-title">⚗️ Chemical combination alerts</div>`;
       data.combination_warnings.forEach(combo => {
@@ -944,24 +1348,17 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
                 <div class="sources-block" style="margin-top:8px;">
                   <div class="sources-label">📚 Sources</div>
                   ${combo.sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}
-                </div>
-              ` : ''}
+                </div>` : ''}
             </div>
-          </div>
-        `;
+          </div>`;
       });
     }
-
-    const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
-    const safe = (data.flags || []).filter(f => f.risk === 'SAFE');
 
     if (flagged.length > 0) {
       html += `<div class="section-title">Flagged ingredients</div>`;
       flagged.forEach((f, i) => {
         const cls = f.risk === 'AVOID' ? 'danger' : 'caution';
         const badgeCls = f.risk === 'AVOID' ? 'avoid' : 'caution';
-        const hasSources = f.sources && f.sources.length > 0;
-
         html += `
           <div class="flag-card ${cls}">
             <div class="flag-name">${f.name} <span class="risk-badge ${badgeCls}">${f.risk}</span></div>
@@ -969,8 +1366,7 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
             ${f.found_in ? `<div class="flag-found">Also hides in: ${f.found_in}</div>` : ''}
             <button class="learn-more-btn" id="btn-${i}" onclick="toggleEducation(${i})" style="display:none;">+ Learn more</button>
             <div class="education-panel" id="edu-${i}"></div>
-          </div>
-        `;
+          </div>`;
       });
     }
 
@@ -979,78 +1375,122 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       html += `<div class="flag-card safe"><div class="flag-reason">${safe.map(f => f.name).join(' · ')}</div></div>`;
     }
 
-    if (flagged.length === 0) {
-      html += `<div class="flag-card safe"><div class="flag-reason">No major red flag ingredients detected! 🌿</div></div>`;
+    if (flagged.length === 0 && verdict === 'LOOKS CLEAN') {
+      html += `<div class="flag-card safe"><div class="flag-reason">No red flag ingredients detected — this one's a keeper! 🌿</div></div>`;
     }
+
+    const shareLabels = {
+      'PUT IT BACK': '😳 Share This Scan',
+      'CAUTION': '👀 Share This Scan',
+      'LOOKS CLEAN': '🎉 Share This Win'
+    };
 
     html += `
       <button class="share-btn" onclick="shareResult()">
-        📲 Share This Scan
+        ${shareLabels[verdict] || '📲 Share This Scan'}
       </button>
-      <div class="share-caption">Show others what's really in their products 🌿</div>
+      <button class="share-btn-fb" onclick="shareToFacebook()">
+        📘 Share to Facebook
+      </button>
+      <div class="share-caption">${verdict === 'LOOKS CLEAN' ? 'Show your people what clean actually looks like 🌿' : 'Your people need to know about this 🌿'}</div>
     `;
 
     document.getElementById('results').innerHTML = html;
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function shareToFacebook() {
+    if (!lastScanData) return;
+    const url = encodeURIComponent('https://restandrootholistic.com');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
   }
 
   async function shareResult() {
     if (!lastScanData) return;
 
     const verdict = lastScanData.verdict;
-    const verdictEmoji = verdict === 'PUT IT BACK' ? '⛔' : verdict === 'CAUTION' ? '⚠️' : '✅';
     const flagged = (lastScanData.flags || []).filter(f => f.risk !== 'SAFE');
     const verdictColor = verdict === 'PUT IT BACK' ? '#C0392B' : verdict === 'CAUTION' ? '#E67E22' : '#4A6E4E';
 
-    // Build branded image card using canvas
+    let shareText = '';
+
+    if (verdict === 'PUT IT BACK') {
+      shareText = `okay I need you to scan your products RIGHT NOW because I just did and 😳\n\n`;
+      flagged.slice(0, 3).forEach(f => {
+        shareText += `🔴 ${f.name} — ${f.reason}\n`;
+      });
+      shareText += `\nI've been using this not knowing what was in it. My crunchy bestie app just told me the truth.\n\nScan yours 👇\nrestandrootholistic.com\n\n@restandrootholistichealth\n#KnowWhatsInIt #RestAndRoot #PutItBack #ToxinFree #LabelScanner`;
+    } else if (verdict === 'CAUTION') {
+      shareText = `not the worst but not the best 👀 I scanned something and got a CAUTION\n\n`;
+      flagged.slice(0, 2).forEach(f => {
+        shareText += `⚠️ ${f.name} — ${f.reason}\n`;
+      });
+      shareText += `\nWorth knowing about. Getting closer to clean one scan at a time. 🌿\n\nrestandrootholistic.com\n\n@restandrootholistichealth\n#RestAndRoot #KnowWhatsInIt #ToxinFree #CleanLiving`;
+    } else {
+      shareText = `WAIT. I actually found a clean one 🎉\n\n✅ LOOKS CLEAN — no hormone disruptors, no fragrance loophole, no mystery chemicals.\n\n`;
+      if (lastScanData.summary) shareText += `${lastScanData.summary}\n\n`;
+      shareText += `Keep this one. 🌿\n\nrestandrootholistic.com\n\n@restandrootholistichealth\n#CleanFind #RestAndRoot #KnowWhatsInIt #ToxinFree #LooksClean`;
+    }
+
+    // Build branded canvas image
     const canvas = document.createElement('canvas');
     canvas.width = 1080;
     canvas.height = 1080;
     const ctx = canvas.getContext('2d');
 
-    // Background
     ctx.fillStyle = '#FAF6F0';
     ctx.fillRect(0, 0, 1080, 1080);
 
-    // Header
     ctx.fillStyle = '#5C3D2E';
-    ctx.fillRect(0, 0, 1080, 140);
+    ctx.fillRect(0, 0, 1080, 130);
     ctx.fillStyle = '#7A9E7E';
-    ctx.font = 'bold 22px Arial, sans-serif';
+    ctx.font = 'bold 20px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('REST & ROOT LABEL SCANNER 🌿', 540, 52);
+    ctx.fillText('REST & ROOT LABEL SCANNER 🌿', 540, 48);
     ctx.fillStyle = '#C9A882';
-    ctx.font = '18px Arial, sans-serif';
-    ctx.fillText('Certified Naturopath Analysis', 540, 85);
-    ctx.fillStyle = 'rgba(250,246,240,0.5)';
-    ctx.font = '15px Arial, sans-serif';
-    ctx.fillText('restandrootholistic.com', 540, 118);
+    ctx.font = '16px Arial, sans-serif';
+    ctx.fillText('Your crunchy bestie in your pocket', 540, 78);
+    ctx.fillStyle = 'rgba(250,246,240,0.4)';
+    ctx.font = '14px Arial, sans-serif';
+    ctx.fillText('restandrootholistic.com', 540, 110);
 
-    // Verdict banner
     ctx.fillStyle = verdictColor;
     ctx.beginPath();
-    ctx.roundRect(60, 160, 960, 100, 12);
+    ctx.roundRect(60, 150, 960, 110, 14);
     ctx.fill();
+
+    const verdictEmoji = verdict === 'PUT IT BACK' ? '⛔' : verdict === 'CAUTION' ? '⚠️' : '✅';
     ctx.fillStyle = 'white';
-    ctx.font = 'bold 40px Arial, sans-serif';
+    ctx.font = 'bold 38px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`${verdictEmoji} ${verdict}`, 540, 225);
+    ctx.fillText(`${verdictEmoji} ${verdict}`, 540, 210);
 
-    // Flagged ingredients
+    const subTexts = { 'PUT IT BACK': 'Okay we need to talk about this one.', 'CAUTION': 'Not the worst, but worth knowing about.', 'LOOKS CLEAN': 'Yes!! This one actually passed. 🎉' };
+    ctx.font = '16px Arial, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText(subTexts[verdict] || '', 540, 240);
+
     let yPos = 290;
-    const maxFlags = Math.min(flagged.length, 4);
 
-    if (flagged.length === 0) {
+    if (verdict === 'LOOKS CLEAN') {
       ctx.fillStyle = '#EEF4EE';
       ctx.beginPath();
-      ctx.roundRect(60, yPos, 960, 100, 8);
+      ctx.roundRect(60, yPos, 960, 200, 12);
       ctx.fill();
       ctx.fillStyle = '#4A6E4E';
-      ctx.font = 'bold 24px Arial, sans-serif';
+      ctx.font = 'bold 28px Arial, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('✅ No major red flags found!', 540, yPos + 58);
-      yPos += 120;
+      ctx.fillText('🎉 You found a good one!', 540, yPos + 60);
+      ctx.fillStyle = '#5C7A60';
+      ctx.font = '18px Arial, sans-serif';
+      ctx.fillText('No hormone disruptors. No fragrance loophole.', 540, yPos + 100);
+      ctx.fillText('No mystery chemicals. Keep this one. 🌿', 540, yPos + 130);
+      ctx.fillStyle = '#8B6F5C';
+      ctx.font = 'italic 15px Arial, sans-serif';
+      ctx.fillText("Every clean find is a win. You're doing the work.", 540, yPos + 170);
+      yPos += 220;
     } else {
-      flagged.slice(0, maxFlags).forEach((f) => {
+      flagged.slice(0, 4).forEach(f => {
         const bgColor = f.risk === 'AVOID' ? '#FCEBEA' : '#FEF3E2';
         const bColor = f.risk === 'AVOID' ? '#C0392B' : '#E67E22';
         ctx.fillStyle = bgColor;
@@ -1059,74 +1499,59 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
         ctx.fill();
         ctx.fillStyle = bColor;
         ctx.fillRect(60, yPos, 5, 108);
-
-        // Badge
         ctx.fillStyle = bColor;
         ctx.beginPath();
         ctx.roundRect(80, yPos + 14, f.risk === 'AVOID' ? 72 : 92, 26, 4);
         ctx.fill();
         ctx.fillStyle = 'white';
-        ctx.font = 'bold 13px Arial, sans-serif';
+        ctx.font = 'bold 12px Arial, sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText(f.risk, 90, yPos + 32);
-
         ctx.fillStyle = '#5C3D2E';
-        ctx.font = 'bold 21px Arial, sans-serif';
+        ctx.font = 'bold 20px Arial, sans-serif';
         ctx.fillText(f.name, 80, yPos + 66);
-
         ctx.fillStyle = '#8B6F5C';
-        ctx.font = '15px Arial, sans-serif';
-        const reason = f.reason && f.reason.length > 68 ? f.reason.substring(0, 65) + '...' : (f.reason || '');
+        ctx.font = '14px Arial, sans-serif';
+        const reason = f.reason && f.reason.length > 72 ? f.reason.substring(0, 69) + '...' : (f.reason || '');
         ctx.fillText(reason, 80, yPos + 93);
-
         yPos += 120;
       });
     }
 
-    // CTA strip
     const ctaY = Math.max(yPos + 20, 860);
     ctx.fillStyle = '#7A9E7E';
     ctx.beginPath();
     ctx.roundRect(60, ctaY, 960, 76, 38);
     ctx.fill();
     ctx.fillStyle = 'white';
-    ctx.font = 'bold 22px Arial, sans-serif';
+    ctx.font = 'bold 20px Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Scan yours free → restandrootholistic.com', 540, ctaY + 46);
-
-    // Bottom tag
     ctx.fillStyle = '#8B6F5C';
-    ctx.font = '17px Arial, sans-serif';
+    ctx.font = '16px Arial, sans-serif';
     ctx.fillText('@restandrootholistichealth  •  #KnowWhatsInIt  •  #RestAndRoot', 540, 1052);
 
-    // Try to share image file (works on mobile)
     try {
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
       const file = new File([blob], 'scan-result.png', { type: 'image/png' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          text: `I just scanned a product I've been using FOREVER and look what came up 😳\n\n@restandrootholistichealth\n#KnowWhatsInIt #RestAndRoot #ToxinFree #LabelScanner`,
-        });
+        await navigator.share({ files: [file], text: shareText });
         return;
       }
-    } catch(e) {
-      console.log('Image share failed:', e);
-    }
+    } catch(e) {}
 
-    // Fallback — download image
     try {
       const link = document.createElement('a');
-      link.download = 'my-scan-result.png';
+      link.download = verdict === 'LOOKS CLEAN' ? 'clean-find.png' : 'scan-result.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
       const toast = document.createElement('div');
       toast.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#4A6E4E;color:white;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;z-index:9999;text-align:center;max-width:300px;`;
-      toast.textContent = '✅ Image saved! Share it on Instagram or TikTok 🌿';
+      toast.textContent = verdict === 'LOOKS CLEAN' ? '🎉 Clean find saved! Share it everywhere 🌿' : '😳 Scan saved! Share it so your people know 🌿';
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 4000);
     } catch(e) {
-      alert('Screenshot this result and share it! Tag @restandrootholistichealth 🌿');
+      alert('Screenshot this and share it! Tag @restandrootholistichealth 🌿');
     }
   }
 </script>
