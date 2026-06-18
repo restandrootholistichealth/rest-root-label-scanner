@@ -1134,7 +1134,21 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
     btn.disabled = true;
     btn.innerHTML = 'Scanning<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
-    results.innerHTML = '<div class="loading">Analyzing ingredients<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span></div>';
+    results.innerHTML = '<div class="loading" id="loadingMsg">Reading your label<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span></div>';
+
+    // Rotating loading messages
+    const loadingMessages = [
+      'Reading your label',
+      'Checking ingredients',
+      'Looking for red flags',
+      'Almost ready'
+    ];
+    let msgIndex = 0;
+    const msgInterval = setInterval(() => {
+      msgIndex = (msgIndex + 1) % loadingMessages.length;
+      const el = document.getElementById('loadingMsg');
+      if (el) el.innerHTML = `${loadingMessages[msgIndex]}<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>`;
+    }, 1800);
 
     try {
       const body = currentMode === 'photo'
@@ -1151,6 +1165,9 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const data = await response.json();
 
+      // Clear loading messages
+      clearInterval(msgInterval);
+
       // Show results immediately
       renderResults(data);
 
@@ -1162,20 +1179,17 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
         localStorage.setItem('rr_free_scan_used', 'true');
         localStorage.removeItem('rr_free_scan_available');
         document.getElementById('freeScanBanner').style.display = 'none';
-
-        // Wait 2 seconds so they can see the result first
-        setTimeout(() => {
-          showPaywall();
-        }, 2000);
+        setTimeout(() => { showPaywall(); }, 2000);
       }
 
-      // CALL 2 — Load education in background
+      // CALL 2 — Load education in background — delay 1 second so it doesn't compete
       const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
       if (flagged.length > 0) {
-        loadEducationInBackground(flagged);
+        setTimeout(() => { loadEducationInBackground(flagged); }, 1000);
       }
 
     } catch (err) {
+      clearInterval(msgInterval);
       results.innerHTML = `<div class="summary-card">Something went wrong — please try again! ${err.message}</div>`;
       btn.disabled = false;
       btn.innerHTML = '🔍 Scan These Ingredients';
@@ -1423,113 +1437,10 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       caption = `WAIT. I actually found a clean one 🎉\n\n✅ LOOKS CLEAN — no hormone disruptors, no fragrance loophole, no mystery chemicals.\n\nKeep this one. 🌿\n\nrestandrootholistic.com\n\n@restandrootholistichealth\n#CleanFind #RestAndRoot #KnowWhatsInIt #ToxinFree`;
     }
 
-    // Generate the canvas image (reuse shareResult canvas logic)
-    const verdictColor = verdict === 'PUT IT BACK' ? '#C0392B' : verdict === 'CAUTION' ? '#E67E22' : '#4A6E4E';
-    const canvas = document.createElement('canvas');
-    canvas.width = 1080;
-    canvas.height = 1080;
-    const ctx = canvas.getContext('2d');
+    // Copy caption first — this is instant
+    try { await navigator.clipboard.writeText(caption); } catch(e) {}
 
-    ctx.fillStyle = '#FAF6F0';
-    ctx.fillRect(0, 0, 1080, 1080);
-    ctx.fillStyle = '#5C3D2E';
-    ctx.fillRect(0, 0, 1080, 130);
-    ctx.fillStyle = '#7A9E7E';
-    ctx.font = 'bold 20px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('REST & ROOT LABEL SCANNER 🌿', 540, 48);
-    ctx.fillStyle = '#C9A882';
-    ctx.font = '16px Arial, sans-serif';
-    ctx.fillText('Your crunchy bestie in your pocket', 540, 78);
-    ctx.fillStyle = 'rgba(250,246,240,0.4)';
-    ctx.font = '14px Arial, sans-serif';
-    ctx.fillText('restandrootholistic.com', 540, 110);
-
-    ctx.fillStyle = verdictColor;
-    ctx.beginPath();
-    ctx.roundRect(60, 150, 960, 110, 14);
-    ctx.fill();
-    const verdictEmoji = verdict === 'PUT IT BACK' ? '⛔' : verdict === 'CAUTION' ? '⚠️' : '✅';
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 38px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${verdictEmoji} ${verdict}`, 540, 210);
-    const subTexts = { 'PUT IT BACK': 'Okay we need to talk about this one.', 'CAUTION': 'Not the worst, but worth knowing about.', 'LOOKS CLEAN': 'Yes!! This one actually passed. 🎉' };
-    ctx.font = '16px Arial, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.fillText(subTexts[verdict] || '', 540, 240);
-
-    let yPos = 290;
-    if (verdict === 'LOOKS CLEAN') {
-      ctx.fillStyle = '#EEF4EE';
-      ctx.beginPath();
-      ctx.roundRect(60, yPos, 960, 200, 12);
-      ctx.fill();
-      ctx.fillStyle = '#4A6E4E';
-      ctx.font = 'bold 28px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('🎉 You found a good one!', 540, yPos + 60);
-      ctx.fillStyle = '#5C7A60';
-      ctx.font = '18px Arial, sans-serif';
-      ctx.fillText('No hormone disruptors. No fragrance loophole.', 540, yPos + 100);
-      ctx.fillText('No mystery chemicals. Keep this one. 🌿', 540, yPos + 130);
-      yPos += 220;
-    } else {
-      flagged.slice(0, 4).forEach(f => {
-        const bgColor = f.risk === 'AVOID' ? '#FCEBEA' : '#FEF3E2';
-        const bColor = f.risk === 'AVOID' ? '#C0392B' : '#E67E22';
-        ctx.fillStyle = bgColor;
-        ctx.beginPath();
-        ctx.roundRect(60, yPos, 960, 108, 8);
-        ctx.fill();
-        ctx.fillStyle = bColor;
-        ctx.fillRect(60, yPos, 5, 108);
-        ctx.fillStyle = bColor;
-        ctx.beginPath();
-        ctx.roundRect(80, yPos + 14, f.risk === 'AVOID' ? 72 : 92, 26, 4);
-        ctx.fill();
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 12px Arial, sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(f.risk, 90, yPos + 32);
-        ctx.fillStyle = '#5C3D2E';
-        ctx.font = 'bold 20px Arial, sans-serif';
-        ctx.fillText(f.name, 80, yPos + 66);
-        ctx.fillStyle = '#8B6F5C';
-        ctx.font = '14px Arial, sans-serif';
-        const reason = f.reason && f.reason.length > 72 ? f.reason.substring(0, 69) + '...' : (f.reason || '');
-        ctx.fillText(reason, 80, yPos + 93);
-        yPos += 120;
-      });
-    }
-
-    const ctaY = Math.max(yPos + 20, 860);
-    ctx.fillStyle = '#7A9E7E';
-    ctx.beginPath();
-    ctx.roundRect(60, ctaY, 960, 76, 38);
-    ctx.fill();
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 20px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Scan yours free → restandrootholistic.com', 540, ctaY + 46);
-    ctx.fillStyle = '#8B6F5C';
-    ctx.font = '16px Arial, sans-serif';
-    ctx.fillText('@restandrootholistichealth  •  #KnowWhatsInIt  •  #RestAndRoot', 540, 1052);
-
-    // Download image
-    try {
-      const link = document.createElement('a');
-      link.download = verdict === 'LOOKS CLEAN' ? 'clean-find.png' : 'scan-result.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    } catch(e) {}
-
-    // Copy caption to clipboard
-    try {
-      await navigator.clipboard.writeText(caption);
-    } catch(e) {}
-
-    // Show instructions toast
+    // Show instructions immediately — don't wait for canvas
     const toast = document.createElement('div');
     toast.style.cssText = `
       position:fixed;bottom:0;left:0;right:0;
@@ -1542,9 +1453,9 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       box-shadow:0 -4px 20px rgba(0,0,0,0.3);
     `;
     toast.innerHTML = `
-      <div style="font-size:18px;font-weight:800;margin-bottom:8px;">✅ Image saved + caption copied! 🌿</div>
-      <div style="color:rgba(250,246,240,0.8);font-size:13px;">
-        Open Facebook → tap <strong style="color:white;">Photo/Video</strong> →<br>
+      <div style="font-size:18px;font-weight:800;margin-bottom:8px;" id="fbToastTitle">📋 Caption copied! Saving image... 🌿</div>
+      <div style="color:rgba(250,246,240,0.8);font-size:13px;" id="fbToastBody">
+        Once saved, open Facebook → tap <strong style="color:white;">Photo/Video</strong> →<br>
         select from your camera roll →<br>
         paste your caption → post!
       </div>
@@ -1555,10 +1466,139 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       ">Got it! 🌿</button>
     `;
     document.body.appendChild(toast);
-    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 8000);
-  }
 
-  function shareToFacebook() {}
+    // Generate canvas image in background
+    try {
+      const verdictColor = verdict === 'PUT IT BACK' ? '#C0392B' : verdict === 'CAUTION' ? '#E67E22' : '#4A6E4E';
+      const canvas = document.createElement('canvas');
+      canvas.width = 1080;
+      canvas.height = 1080;
+      const ctx = canvas.getContext('2d');
+
+      // Safe rounded rect helper — no roundRect API needed
+      function roundRect(x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
+      // Background
+      ctx.fillStyle = '#FAF6F0';
+      ctx.fillRect(0, 0, 1080, 1080);
+
+      // Header
+      ctx.fillStyle = '#5C3D2E';
+      ctx.fillRect(0, 0, 1080, 130);
+      ctx.fillStyle = '#7A9E7E';
+      ctx.font = 'bold 20px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('REST & ROOT LABEL SCANNER', 540, 48);
+      ctx.fillStyle = '#C9A882';
+      ctx.font = '16px Arial, sans-serif';
+      ctx.fillText('Your crunchy bestie in your pocket', 540, 78);
+      ctx.fillStyle = 'rgba(250,246,240,0.4)';
+      ctx.font = '14px Arial, sans-serif';
+      ctx.fillText('restandrootholistic.com', 540, 110);
+
+      // Verdict banner
+      ctx.fillStyle = verdictColor;
+      roundRect(60, 150, 960, 110, 14);
+      ctx.fill();
+      const verdictEmoji = verdict === 'PUT IT BACK' ? 'PUT IT BACK' : verdict === 'CAUTION' ? 'CAUTION' : 'LOOKS CLEAN';
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 38px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(verdict, 540, 210);
+      const subTexts = {
+        'PUT IT BACK': 'Okay we need to talk about this one.',
+        'CAUTION': 'Not the worst, but worth knowing about.',
+        'LOOKS CLEAN': 'Yes!! This one actually passed.'
+      };
+      ctx.font = '16px Arial, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText(subTexts[verdict] || '', 540, 240);
+
+      let yPos = 290;
+
+      if (verdict === 'LOOKS CLEAN') {
+        ctx.fillStyle = '#EEF4EE';
+        roundRect(60, yPos, 960, 200, 12);
+        ctx.fill();
+        ctx.fillStyle = '#4A6E4E';
+        ctx.font = 'bold 28px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('You found a good one!', 540, yPos + 60);
+        ctx.fillStyle = '#5C7A60';
+        ctx.font = '18px Arial, sans-serif';
+        ctx.fillText('No hormone disruptors. No fragrance loophole.', 540, yPos + 100);
+        ctx.fillText('No mystery chemicals. Keep this one.', 540, yPos + 130);
+        yPos += 220;
+      } else {
+        flagged.slice(0, 4).forEach(f => {
+          const bgColor = f.risk === 'AVOID' ? '#FCEBEA' : '#FEF3E2';
+          const bColor = f.risk === 'AVOID' ? '#C0392B' : '#E67E22';
+          ctx.fillStyle = bgColor;
+          roundRect(60, yPos, 960, 108, 8);
+          ctx.fill();
+          ctx.fillStyle = bColor;
+          ctx.fillRect(60, yPos, 5, 108);
+          ctx.fillStyle = bColor;
+          roundRect(80, yPos + 14, f.risk === 'AVOID' ? 72 : 92, 26, 4);
+          ctx.fill();
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 12px Arial, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(f.risk, 90, yPos + 32);
+          ctx.fillStyle = '#5C3D2E';
+          ctx.font = 'bold 20px Arial, sans-serif';
+          ctx.fillText(f.name, 80, yPos + 66);
+          ctx.fillStyle = '#8B6F5C';
+          ctx.font = '14px Arial, sans-serif';
+          const reason = f.reason && f.reason.length > 72 ? f.reason.substring(0, 69) + '...' : (f.reason || '');
+          ctx.fillText(reason, 80, yPos + 93);
+          yPos += 120;
+        });
+      }
+
+      // CTA
+      const ctaY = Math.max(yPos + 20, 860);
+      ctx.fillStyle = '#7A9E7E';
+      roundRect(60, ctaY, 960, 76, 38);
+      ctx.fill();
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 20px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Scan yours free -> restandrootholistic.com', 540, ctaY + 46);
+      ctx.fillStyle = '#8B6F5C';
+      ctx.font = '16px Arial, sans-serif';
+      ctx.fillText('@restandrootholistichealth  #KnowWhatsInIt  #RestAndRoot', 540, 1052);
+
+      // Download
+      const link = document.createElement('a');
+      link.download = verdict === 'LOOKS CLEAN' ? 'clean-find.png' : 'scan-result.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      // Update toast to show success
+      const titleEl = document.getElementById('fbToastTitle');
+      if (titleEl) titleEl.textContent = '✅ Image saved + caption copied! 🌿';
+
+    } catch(e) {
+      console.log('Canvas error:', e);
+      const titleEl = document.getElementById('fbToastTitle');
+      if (titleEl) titleEl.textContent = '✅ Caption copied! 🌿';
+      const bodyEl = document.getElementById('fbToastBody');
+      if (bodyEl) bodyEl.innerHTML = 'Screenshot this scan result and post it to Facebook with the caption that was just copied to your clipboard! 🌿';
+    }
+  }
 
   async function shareResult() {
     if (!lastScanData) return;
