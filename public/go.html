@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '27274020995621082');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"/></noscript>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="facebook-domain-verification" content="daqwhtuat3ui0ct9919fdsuejw7dqp" />
+<title>Rest & Root Label Scanner — Know What's Really In Your Products</title>
+<meta name="description" content="Scan any ingredient label and know instantly what's toxic, what's safe, and what to swap to. Built by a certified naturopath. Try free for 7 days.">
+<style>
+  /* ── TOKENS ── */
+  :root {
+    --cream: #FAF6F0;
+    --cream-dark: #F2EBE1;
+    --bark: #5C3D2E;
+    --bark-dark: #3D2418;
+    --sage: #7A9E7E;
+    --deep-sage: #5C7A60;
+    --gold: #C9A464;
+    --blush: #C9A882;
+    --warm-brown: #8B6F5C;
+    --light-sage: #EEF4EE;
+    --red: #C0392B;
+    --text: #2A1A10;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ── NAV ── */
+  nav {
+    background: var(--cream);
+    border-bottom: 1px solid rgba(92,61,46,0.08);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .nav-brand {
+    font-family: Georgia, serif;
+    font-size: 16px;
+    color: var(--bark);
+    font-weight: normal;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-cta {
+    background: var(--sage);
+    color: white;
+    text-decoration: none;
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    transition: background 0.2s;
+  }
+
+  .nav-cta:hover { background: var(--deep-sage); }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--cream);
+    padding: 60px 24px 56px;
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--light-sage);
+    border: 1px solid rgba(122,158,126,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--deep-sage);
+    letter-spacing: 0.05em;
+    margin-bottom: 24px;
+  }
+
+  .hero h1 {
+    font-family: Georgia, serif;
+    font-size: clamp(32px, 7vw, 52px);
+    font-weight: normal;
+    line-height: 1.15;
+    color: var(--bark);
+    margin-bottom: 20px;
+    letter-spacing: -0.01em;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--sage);
+  }
+
+  .hero-sub {
+    font-size: clamp(16px, 3vw, 18px);
+    color: var(--warm-brown);
+    max-width: 480px;
+    margin: 0 auto 36px;
+    line-height: 1.7;
+  }
+
+  .hero-sub strong { color: var(--bark); }
+
+  /* ── CTA BUTTONS ── */
+  .cta-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--sage);
+    color: white;
+    text-decoration: none;
+    padding: 16px 32px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(122,158,126,0.35);
+    letter-spacing: 0.01em;
+  }
+
+  .btn-primary:hover { background: var(--deep-sage); transform: translateY(-1px); }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    color: var(--bark);
+    text-decoration: none;
+    padding: 15px 32px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    border: 2px solid rgba(92,61,46,0.15);
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover { border-color: var(--sage); color: var(--sage); }
+
+  .cta-note {
+    font-size: 12px;
+    color: var(--warm-brown);
+    text-align: center;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .divider-line { flex: 1; height: 1px; background: rgba(92,61,46,0.1); }
+  .divider-text {
+    font-size: 10px;
+    color: var(--warm-brown);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ── PROBLEM SECTION ── */
+  .problem {
+    background: var(--bark-dark);
+    padding: 64px 24px;
+    text-align: center;
+  }
+
+  .section-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--sage);
+    font-weight: 600;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  .problem h2 {
+    font-family: Georgia, serif;
+    font-size: clamp(24px, 5vw, 36px);
+    color: var(--cream);
+    font-weight: normal;
+    max-width: 560px;
+    margin: 0 auto 16px;
+    line-height: 1.3;
+  }
+
+  .problem p {
+    font-size: 15px;
+    color: rgba(250,246,240,0.65);
+    max-width: 480px;
+    margin: 0 auto 40px;
+    line-height: 1.7;
+  }
+
+  .stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    max-width: 640px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    flex: 1;
+    min-width: 140px;
+    padding: 24px 16px;
+    border-right: 1px solid rgba(255,255,255,0.07);
+    text-align: center;
+  }
+
+  .stat-item:last-child { border-right: none; }
+
+  .stat-num {
+    font-family: Georgia, serif;
+    font-size: 44px;
+    font-weight: bold;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: rgba(250,246,240,0.55);
+    line-height: 1.5;
+  }
+
+  .stat-label strong { color: rgba(250,246,240,0.85); display: block; }
+
+  /* ── HOW IT WORKS ── */
+  .how {
+    padding: 72px 24px;
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .how h2 {
+    font-family: Georgia, serif;
+    font-size: clamp(24px, 5vw, 36px);
+    color: var(--bark);
+    font-weight: normal;
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+
+  .how-sub {
+    font-size: 15px;
+    color: var(--warm-brown);
+    margin-bottom: 48px;
+  }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    text-align: left;
+  }
+
+  .step {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    background: white;
+    border-radius: 16px;
+    padding: 22px 20px;
+    border: 1px solid rgba(92,61,46,0.06);
+    box-shadow: 0 2px 16px rgba(92,61,46,0.05);
+  }
+
+  .step-num {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--light-sage);
+    color: var(--deep-sage);
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+
+  .step-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--bark);
+    margin-bottom: 4px;
+  }
+
+  .step-desc {
+    font-size: 13px;
+    color: var(--warm-brown);
+    line-height: 1.6;
+  }
+
+  /* ── VS SECTION ── */
+  .vs-section {
+    background: var(--cream-dark);
+    padding: 72px 24px;
+  }
+
+  .vs-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .vs-inner h2 {
+    font-family: Georgia, serif;
+    font-size: clamp(24px, 5vw, 36px);
+    color: var(--bark);
+    font-weight: normal;
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+
+  .vs-inner .section-sub {
+    font-size: 15px;
+    color: var(--warm-brown);
+    margin-bottom: 40px;
+  }
+
+  .vs-table {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(92,61,46,0.08);
+  }
+
+  .vs-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: var(--bark);
+    padding: 16px 20px;
+  }
+
+  .vs-header-cell {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+    color: rgba(250,246,240,0.6);
+  }
+
+  .vs-header-cell.highlight { color: var(--gold); }
+
+  .vs-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(92,61,46,0.06);
+    align-items: center;
+  }
+
+  .vs-row:last-child { border-bottom: none; }
+  .vs-row:nth-child(even) { background: rgba(250,246,240,0.5); }
+
+  .vs-cell {
+    font-size: 13px;
+    color: var(--warm-brown);
+    text-align: center;
+    padding: 4px 8px;
+  }
+
+  .vs-cell.feature { text-align: left; font-weight: 600; color: var(--bark); }
+  .vs-cell.yes { color: var(--deep-sage); font-weight: 700; font-size: 16px; }
+  .vs-cell.no { color: #C0392B; font-size: 16px; }
+  .vs-cell.highlight-col { background: rgba(122,158,126,0.06); }
+
+  /* ── VERDICTS ── */
+  .verdicts-section {
+    padding: 72px 24px;
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .verdicts-section h2 {
+    font-family: Georgia, serif;
+    font-size: clamp(24px, 5vw, 36px);
+    color: var(--bark);
+    font-weight: normal;
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+
+  .verdicts-section .section-sub {
+    font-size: 15px;
+    color: var(--warm-brown);
+    margin-bottom: 40px;
+  }
+
+  .verdict-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .verdict-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid transparent;
+  }
+
+  .verdict-card.red { background: #FEF5F4; border-color: rgba(192,57,43,0.12); }
+  .verdict-card.yellow { background: #FEF8F0; border-color: rgba(230,126,34,0.12); }
+  .verdict-card.green { background: #F0F7F0; border-color: rgba(92,122,96,0.15); }
+
+  .verdict-icon { font-size: 32px; flex-shrink: 0; }
+
+  .verdict-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .verdict-card.red .verdict-label { color: var(--red); }
+  .verdict-card.yellow .verdict-label { color: #E67E22; }
+  .verdict-card.green .verdict-label { color: var(--deep-sage); }
+
+  .verdict-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--bark);
+    margin-bottom: 4px;
+  }
+
+  .verdict-card-desc {
+    font-size: 13px;
+    color: var(--warm-brown);
+    line-height: 1.6;
+  }
+
+  /* ── TESTIMONIALS ── */
+  .testimonials {
+    background: var(--bark-dark);
+    padding: 72px 24px;
+  }
+
+  .testimonials-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .testimonials h2 {
+    font-family: Georgia, serif;
+    font-size: clamp(24px, 5vw, 36px);
+    color: var(--cream);
+    font-weight: normal;
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+
+  .testimonials .section-sub {
+    font-size: 15px;
+    color: rgba(250,246,240,0.55);
+    margin-bottom: 40px;
+  }
+
+  .testimonial-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    text-align: left;
+  }
+
+  .testimonial-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 24px 20px;
+  }
+
+  .testimonial-stars {
+    font-size: 14px;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .testimonial-text {
+    font-size: 14px;
+    color: rgba(250,246,240,0.85);
+    line-height: 1.7;
+    font-style: italic;
+    margin-bottom: 14px;
+  }
+
+  .testimonial-author {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--sage);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── ABOUT ── */
+  .about {
+    padding: 72px 24px;
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .about-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--sage), var(--deep-sage));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    margin: 0 auto 16px;
+  }
+
+  .about-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--bark);
+    margin-bottom: 4px;
+  }
+
+  .about-title {
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--sage);
+    margin-bottom: 24px;
+  }
+
+  .about-text {
+    font-size: 15px;
+    color: var(--warm-brown);
+    line-height: 1.8;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  .about-text strong { color: var(--bark); }
+
+  /* ── FINAL CTA ── */
+  .final-cta {
+    background: var(--cream-dark);
+    padding: 72px 24px;
+    text-align: center;
+  }
+
+  .final-cta h2 {
+    font-family: Georgia, serif;
+    font-size: clamp(28px, 6vw, 44px);
+    color: var(--bark);
+    font-weight: normal;
+    margin-bottom: 12px;
+    line-height: 1.2;
+  }
+
+  .final-cta h2 em { font-style: italic; color: var(--sage); }
+
+  .final-cta p {
+    font-size: 15px;
+    color: var(--warm-brown);
+    margin-bottom: 36px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 24px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--warm-brown);
+    line-height: 1.8;
+    border-top: 1px solid rgba(92,61,46,0.08);
+  }
+
+  @media (min-width: 500px) {
+    .cta-group { flex-direction: row; justify-content: center; }
+    .stats-row { flex-wrap: nowrap; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">Rest & Root 🌿</div>
+  <a href="https://apps.apple.com/us/app/rest-and-root-label-scanner/id6768374066" class="nav-cta" onclick="fbq('track','Lead',{content_name:'nav_cta'})">Try Free →</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">🌿 Built by a Certified Naturopath</div>
+  <h1>Stop guessing what's in your products.<br><em>Start knowing.</em></h1>
+  <p class="hero-sub">The ingredient scanner that reads the <strong>actual label</strong> — not a database brands can pay into. Point your camera at anything. Know the truth in seconds.</p>
+
+  <div class="cta-group">
+    <a href="https://apps.apple.com/us/app/rest-and-root-label-scanner/id6768374066" class="btn-primary" onclick="fbq('track','Lead',{content_name:'hero_ios'})">
+      🍎 Download on App Store
+    </a>
+    <a href="https://play.google.com/store/apps/details?id=com.restandroot.labelscanner" class="btn-secondary" onclick="fbq('track','Lead',{content_name:'hero_android'})">
+      🤖 Get it on Google Play
+    </a>
+  </div>
+  <div class="cta-note">7-day free trial · No commitment · Cancel anytime</div>
+</div>
+
+<!-- PROBLEM -->
+<div class="problem">
+  <span class="section-eyebrow">The cost of not knowing</span>
+  <h2>You're already using these products every single day.</h2>
+  <p>The only question is whether you know what's in them.</p>
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-num">168</div>
+      <div class="stat-label"><strong>chemicals</strong> applied before leaving the house</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">11</div>
+      <div class="stat-label"><strong>banned</strong> in the US vs 2,400+ in the EU</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">0</div>
+      <div class="stat-label"><strong>disclosures</strong> required for what hides under "fragrance"</div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div class="how">
+  <span class="section-eyebrow">How it works</span>
+  <h2>Three steps. Three seconds.</h2>
+  <p class="how-sub">No chemistry degree required. No guesswork. Just answers.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">📷</div>
+      <div>
+        <div class="step-title">Snap a photo of any label</div>
+        <div class="step-desc">Personal care, cleaning products, food, supplements — anything with an ingredient list. Even handmade products at craft shows with no barcode.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">🔍</div>
+      <div>
+        <div class="step-title">Get your verdict instantly</div>
+        <div class="step-desc">PUT IT BACK, CAUTION, or LOOKS CLEAN — with plain English explanations of what each flagged ingredient does in your body, including mineral depletion and hormone disruption.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">🌿</div>
+      <div>
+        <div class="step-title">Know exactly what to do next</div>
+        <div class="step-desc">Clean product recommendations, DIY recipes with exact measurements, and chemical combination alerts when ingredients react dangerously together.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VS SECTION -->
+<div class="vs-section">
+  <div class="vs-inner">
+    <span class="section-eyebrow">How we compare</span>
+    <h2>Not all scanners are created equal.</h2>
+    <p class="section-sub">Most apps scan barcodes from databases brands can pay into. Rest & Root scans the actual ingredients.</p>
+    <div class="vs-table">
+      <div class="vs-header">
+        <div class="vs-header-cell">Feature</div>
+        <div class="vs-header-cell">Other Apps</div>
+        <div class="vs-header-cell highlight">Rest & Root 🌿</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-cell feature">Scans actual ingredients</div>
+        <div class="vs-cell no">✗</div>
+        <div class="vs-cell yes highlight-col">✓</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-cell feature">Can't be bought by brands</div>
+        <div class="vs-cell no">✗</div>
+        <div class="vs-cell yes highlight-col">✓</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-cell feature">Explains what ingredients do to your body</div>
+        <div class="vs-cell no">✗</div>
+        <div class="vs-cell yes highlight-col">✓</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-cell feature">Flags mineral depletion</div>
+        <div class="vs-cell no">✗</div>
+        <div class="vs-cell yes highlight-col">✓</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-cell feature">Chemical combination alerts</div>
+        <div class="vs-cell no">✗</div>
+        <div class="vs-cell yes highlight-col">✓</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-cell feature">DIY clean swap recipes</div>
+        <div class="vs-cell no">✗</div>
+        <div class="vs-cell yes highlight-col">✓</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-cell feature">Works on craft show products</div>
+        <div class="vs-cell no">✗</div>
+        <div class="vs-cell yes highlight-col">✓</div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-cell feature">Built by a certified naturopath</div>
+        <div class="vs-cell no">✗</div>
+        <div class="vs-cell yes highlight-col">✓</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VERDICTS -->
+<div class="verdicts-section">
+  <span class="section-eyebrow">The verdict system</span>
+  <h2>Three verdicts. Zero confusion.</h2>
+  <p class="section-sub">No scores out of 100. No color wheels. Just a clear answer and exactly what to do with it.</p>
+  <div class="verdict-cards">
+    <div class="verdict-card red">
+      <div class="verdict-icon">⛔</div>
+      <div>
+        <div class="verdict-label">Put It Back</div>
+        <div class="verdict-card-title">This one has ingredients to avoid</div>
+        <div class="verdict-card-desc">Contains ingredients linked to hormone disruption, mineral depletion, nervous system stress, or known carcinogens. You'll get a clean swap suggestion and a DIY recipe if one exists.</div>
+      </div>
+    </div>
+    <div class="verdict-card yellow">
+      <div class="verdict-icon">⚠️</div>
+      <div>
+        <div class="verdict-label">Caution</div>
+        <div class="verdict-card-title">Not the worst, but not the best</div>
+        <div class="verdict-card-desc">Some ingredients worth watching — not an emergency, but worth finding a cleaner alternative when you can.</div>
+      </div>
+    </div>
+    <div class="verdict-card green">
+      <div class="verdict-icon">✅</div>
+      <div>
+        <div class="verdict-label">Looks Clean</div>
+        <div class="verdict-card-title">This one's a keeper 🎉</div>
+        <div class="verdict-card-desc">No major red flags detected. Keep using it with confidence. (And yes — we celebrate the wins too. Clean finds are worth sharing.)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TESTIMONIALS -->
+<div class="testimonials">
+  <div class="testimonials-inner">
+    <span class="section-eyebrow">What people are saying</span>
+    <h2>Real people. Real scans.</h2>
+    <p class="section-sub">From actual users who tried it first.</p>
+    <div class="testimonial-cards">
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <div class="testimonial-text">"I absolutely love this app! As someone who is trying to be more health conscious for myself and my family this works wonders! The app is user friendly, promotes transparency, and aids in identifying high risk additives hiding in a mile long ingredient list. It is accurate, reliable and a quick overview of products to identify unwanted additives within seconds. It is beginner friendly and I appreciate the feature that suggests healthier, low toxin alternatives. Overall, I'm very satisfied and would recommend to anyone looking to make informed choices about food and everyday use items."</div>
+        <div class="testimonial-author">— Verified User</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <div class="testimonial-text">"This is an awesome app!! Do you have something on FB that I can share this?"</div>
+        <div class="testimonial-author">— Verified User</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <div class="testimonial-text">"Just kidding, but it is seriously addictive to scan things and learn what the ingredients do."</div>
+        <div class="testimonial-author">— Verified User</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div class="about">
+  <div class="about-avatar">🌿</div>
+  <div class="about-name">Lindsay Greear</div>
+  <div class="about-title">Certified Naturopath · HTMA Practitioner · Rest & Root Holistic Health</div>
+  <p class="about-text">
+    After my Hashimoto's diagnosis, I realized the products I'd trusted for years were quietly working against my body. I spent years learning what was really in them — and I got angry that this information was so hard to find.
+    <br><br>
+    <strong>I built this app so you don't have to spend years figuring it out the hard way.</strong>
+    <br><br>
+    You deserve to know what's in your products. And knowing shouldn't require a chemistry degree.
+  </p>
+</div>
+
+<!-- FINAL CTA -->
+<div class="final-cta">
+  <span class="section-eyebrow">Ready to start knowing?</span>
+  <h2>Your first scan is <em>free.</em></h2>
+  <p>No account required. No commitment. Just scan something from your bathroom tonight and see what comes up.</p>
+  <div class="cta-group" style="margin-bottom:16px;">
+    <a href="https://apps.apple.com/us/app/rest-and-root-label-scanner/id6768374066" class="btn-primary" onclick="fbq('track','Lead',{content_name:'footer_ios'})">
+      🍎 Download on App Store
+    </a>
+    <a href="https://play.google.com/store/apps/details?id=com.restandroot.labelscanner" class="btn-secondary" onclick="fbq('track','Lead',{content_name:'footer_android'})">
+      🤖 Get it on Google Play
+    </a>
+  </div>
+  <div class="cta-note">7-day free trial · $12.99/month or $120/year after · Cancel anytime</div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>🌿 Rest & Root Holistic Health LLC · Lindsay Greear, Certified Naturopath & HTMA Practitioner</p>
+  <p>For educational purposes only. Not medical advice.</p>
+</footer>
+
+</body>
+</html>
