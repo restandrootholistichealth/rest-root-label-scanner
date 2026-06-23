@@ -14,7 +14,7 @@
     { "src": "/api/verify-license", "dest": "/api/verify-license.js" },
     { "src": "/api/scan", "dest": "/api/scan.js" },
     { "src": "/api/meta-events", "dest": "/api/meta-events.js" },
-    { "src": "/", "dest": "/public/index.html" },
+    { "src": "/", "dest": "/public/go.html" },
     { "src": "/go(\\.html)?", "dest": "/public/go.html" },
     { "src": "/paywall(\\.html)?", "dest": "/public/paywall.html" },
     { "src": "/scanner(\\.html)?", "dest": "/public/scanner.html" },
