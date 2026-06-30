@@ -53,6 +53,16 @@ const VERIFIED_SOURCES = {
     { name: "PubMed — Carrageenan Inflammation Research", url: "https://pubmed.ncbi.nlm.nih.gov/23538004/" },
     { name: "Cornucopia Institute — Carrageenan Report", url: "https://www.cornucopia.org/carrageenan/" }
   ],
+  natural_flavors: [
+    { name: "FDA — Natural Flavors Definition", url: "https://www.fda.gov/food/food-additives-petitions/food-additive-status-list" },
+    { name: "EWG — Natural Flavors", url: "https://www.ewg.org/foodscores/content/natural-vs-artificial-flavors" },
+    { name: "NIH — Food Additive Safety", url: "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3649458/" }
+  ],
+  essential_oils: [
+    { name: "NIH PubMed — Essential Oil Skin Sensitization", url: "https://pubmed.ncbi.nlm.nih.gov/30864277/" },
+    { name: "EWG Skin Deep — Fragrance Oils", url: "https://www.ewg.org/skindeep/" },
+    { name: "American Contact Dermatitis Society", url: "https://www.contactderm.org/" }
+  ],
   general: [
     { name: "NIH — Personal Care Product Safety Research", url: "https://newsinhealth.nih.gov/2022/08/probing-personal-care-products" },
     { name: "EWG Skin Deep Cosmetics Database", url: "https://www.ewg.org/skindeep/" },
@@ -180,6 +190,8 @@ function getSourcesForIngredient(name) {
   if (n.includes('red 40') || n.includes('yellow 5') || n.includes('yellow 6') || n.includes('blue 1')) return VERIFIED_SOURCES.artificial_dyes;
   if (n.includes('oxybenzone') || n.includes('benzophenone')) return VERIFIED_SOURCES.oxybenzone;
   if (n.includes('carrageenan')) return VERIFIED_SOURCES.carrageenan;
+  if (n.includes('natural flavor')) return VERIFIED_SOURCES.natural_flavors;
+  if (n.includes('essential oil') || n.includes('lavender oil') || n.includes('tea tree oil') || n.includes('citrus oil') || n.includes('peppermint oil') || n.includes('eucalyptus oil')) return VERIFIED_SOURCES.essential_oils;
   return VERIFIED_SOURCES.general;
 }
 
@@ -202,11 +214,17 @@ JSON format:
   ]
 }
 
-RED FLAGS — ALWAYS rate as AVOID: parabens, fragrance/parfum, DMDM Hydantoin, Diazolidinyl Urea, Imidazolidinyl Urea, Quaternium-15, oxybenzone, HFCS, Red 40/Yellow 5/Yellow 6/Blue 1, sodium nitrate/nitrite, partially hydrogenated oils, QUATS/benzalkonium chloride, aspartame/sucralose/saccharin, canola/soybean/corn/vegetable oils in skincare, sodium hypochlorite, triclosan, SLS/SLES, BHA/BHT, carrageenan, PEGs, propylene glycol, formaldehyde releasers, phthalates, coal tar, toluene, ammonia.
+RED FLAGS — ALWAYS rate as AVOID: parabens, fragrance/parfum, DMDM Hydantoin, Diazolidinyl Urea, Imidazolidinyl Urea, Quaternium-15, oxybenzone, HFCS, Red 40/Yellow 5/Yellow 6/Blue 1/Red 3, sodium nitrate/nitrite, partially hydrogenated oils, QUATS/benzalkonium chloride, aspartame/sucralose/saccharin, canola/soybean/corn/vegetable oils in skincare, sodium hypochlorite, triclosan, SLS/SLES, BHA/BHT, carrageenan, PEGs, propylene glycol, formaldehyde releasers, phthalates, coal tar, toluene, ammonia, titanium dioxide (in inhalable products), nitrates, nitrites, artificial sweeteners, hydroquinone, mercury/thimerosal, lead acetate.
 
-CAUTION — ALWAYS rate as CAUTION: phenoxyethanol, dimethicone, carbomer, tocopheryl acetate synthetic, retinyl palmitate, aluminum compounds, fluoride, sodium benzoate.
+CAUTION — ALWAYS rate as CAUTION: phenoxyethanol, dimethicone, carbomer, tocopheryl acetate synthetic, retinyl palmitate, aluminum compounds, fluoride, sodium benzoate, natural flavors/natural flavor (broad term that can hide dozens of undisclosed ingredients — manufacturers are not required to reveal what is actually included), citric acid (in high concentrations), ethanol in skincare, polyethylene glycol, mineral oil, petrolatum, talc, styrene, styrene copolymers, heavy metals in cosmetics, nanoparticles, essential oils/essential oil (any specific oil like lavender oil, tea tree oil, citrus oil, peppermint oil — rate as CAUTION but explain the nuance: quality and sourcing matters enormously, and properly diluted with a carrier oil they are generally well tolerated by most people, but concentrated or undiluted use can cause skin sensitization, photosensitivity with citrus oils, or reactions in people with sensitivities. This is different from synthetic fragrance which always hides undisclosed chemicals — essential oils are at least a known, named ingredient the person can research and decide on for themselves), botanical extracts in high concentration.
 
-CRITICAL: Same ingredient ALWAYS gets same risk rating. Never rate a RED FLAG as anything other than AVOID. Never put DIY recipes in the summary field.`;
+SAFE — only rate as SAFE if the ingredient is water, a basic preservative-free botanical extract used in low concentration, a vitamin, a mineral, a basic emulsifier like glycerin or vegetable glycerin, aloe, or another ingredient with no documented concerns. If you are not certain whether an ingredient belongs in AVOID, CAUTION, or SAFE, default to CAUTION rather than SAFE. Never guess an ingredient into SAFE.
+
+CRITICAL CONSISTENCY RULE: You must apply the EXACT same risk rating to the EXACT same ingredient name every single time, with zero exceptions, regardless of what product it appears in or what time it is scanned. Do not use judgment calls for ingredients already listed above. If an ingredient is not in any list above, default it to CAUTION rather than inventing a SAFE rating — under-flagging is a critical error, over-flagging is acceptable.
+
+NOTE ON ESSENTIAL OILS SPECIFICALLY: When essential oils are flagged, the reason and education should never sound as alarming as a synthetic red flag ingredient. Make clear this is a "know before you use" flag, not a "this is harmful" flag. Mention that sourcing and quality matters — a reputable, properly diluted essential oil is a very different product than a cheap, undiluted, or adulterated one. The goal is informed choice, not fear.
+
+CRITICAL: Same ingredient ALWAYS gets same risk rating across every scan, every time, no exceptions. Never rate a RED FLAG as anything other than AVOID. Never rate an unlisted ingredient as SAFE — default to CAUTION when uncertain. Never put DIY recipes in the summary field.`;
 
   let content = [];
   if (image) {
@@ -239,6 +257,7 @@ ACCURACY RULES:
 - Use "is known to" only for established facts
 - Use "some practitioners believe" for naturopathic perspectives not yet in mainstream research
 - Never overstate harm
+- For essential oils specifically: include practical sourcing guidance (look for third-party tested, properly labeled with botanical name, GC/MS tested if possible, sold by a reputable supplier, and used diluted with a carrier oil rather than applied undiluted). Make clear this is about informed choice, not avoidance — a quality essential oil used properly is very different from a poor quality or undiluted one.
 
 JSON format:
 {
