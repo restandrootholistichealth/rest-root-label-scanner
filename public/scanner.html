@@ -932,21 +932,19 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
   <!-- PHOTO MODE -->
   <div id="photo-mode" class="input-section">
-    <img id="preview" class="preview-img" alt="Label preview">
     <div style="display:flex;gap:10px;margin-bottom:12px;">
-      <label style="flex:1;text-align:center;background:#7A9E7E;color:white;padding:14px 10px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:block;">
-        📷 Take Photo
+      <label style="flex:1;text-align:center;background:#7A9E7E;color:white;padding:16px 10px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;display:block;line-height:1.3;">
+        📷<br>Take Photo
         <input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this)" style="display:none;">
       </label>
-      <label style="flex:1;text-align:center;background:white;color:#5C3D2E;border:2px solid #5C3D2E;padding:14px 10px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:block;">
-        🖼️ Choose Photo
+      <label style="flex:1;text-align:center;background:white;color:#5C3D2E;border:2px solid rgba(92,61,46,0.2);padding:16px 10px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;display:block;line-height:1.3;">
+        🖼️<br>Choose Photo
         <input type="file" accept="image/*" onchange="handlePhoto(this)" style="display:none;">
       </label>
     </div>
-    <div class="upload-area" id="uploadArea" style="padding:20px;margin-top:0;">
-      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
-      <div class="upload-icon">📷</div>
-      <p style="font-size:13px;color:#8a7a6a;">Or tap here to take a photo</p>
+    <div id="previewContainer" style="display:none;margin-bottom:8px;">
+      <img id="preview" class="preview-img" alt="Label preview" style="display:block;">
+      <p style="font-size:12px;color:#7A9E7E;text-align:center;margin-top:6px;font-weight:600;">✅ Photo loaded — tap Scan below</p>
     </div>
   </div>
 
@@ -1151,9 +1149,21 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
         const compressed = canvas.toDataURL('image/jpeg', 0.8);
         photoData = compressed.split(',')[1];
         photoMediaType = 'image/jpeg';
+
+        // Show preview
         const preview = document.getElementById('preview');
+        const previewContainer = document.getElementById('previewContainer');
         preview.src = compressed;
         preview.style.display = 'block';
+        preview.style.width = '100%';
+        preview.style.maxHeight = '250px';
+        preview.style.objectFit = 'contain';
+        preview.style.borderRadius = '8px';
+        if (previewContainer) previewContainer.style.display = 'block';
+
+        // Scroll scan button into view
+        const scanBtn = document.getElementById('scanBtn');
+        if (scanBtn) scanBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       };
       img.src = e.target.result;
     };
@@ -1207,7 +1217,7 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     }
 
     if (currentMode === 'photo' && !photoData) {
-      results.innerHTML = '<div class="summary-card">Please take or upload a photo first!</div>';
+      results.innerHTML = '<div class="summary-card" style="text-align:center;">📷 Please take or choose a photo first — then tap Scan!</div>';
       return;
     }
 
