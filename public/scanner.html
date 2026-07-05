@@ -2,18 +2,10 @@
 <html lang="en">
 <head>
 <script>
-  // New flow: check subscription OR free scan token
   (async function() {
     try {
       const params = new URLSearchParams(window.location.search);
-
-      // Bypass key
-      if (params.get('key') === 'RootScanner2025') {
-        localStorage.setItem('rr_unlocked', 'true');
-        return;
-      }
-
-      // Check active subscription
+      if (params.get('key') === 'RootScanner2025') { localStorage.setItem('rr_unlocked', 'true'); return; }
       try {
         const purchases = await twinr_get_iap_purchases();
         if (Array.isArray(purchases) && purchases.length > 0) {
@@ -22,29 +14,18 @@
           return;
         }
       } catch(e) {}
-
-      // Check localStorage subscription
       if (localStorage.getItem('rr_unlocked') === 'true') return;
-
-      // Check free scan token — allow through if available
       if (localStorage.getItem('rr_free_scan_available') === 'true') return;
-
-      // No subscription, no free scan — redirect to onboarding
       window.location.href = '/';
-
     } catch(e) {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('key') === 'RootScanner2025') {
-        localStorage.setItem('rr_unlocked', 'true');
-        return;
-      }
+      if (params.get('key') === 'RootScanner2025') { localStorage.setItem('rr_unlocked', 'true'); return; }
       if (localStorage.getItem('rr_unlocked') === 'true') return;
       if (localStorage.getItem('rr_free_scan_available') === 'true') return;
       window.location.href = '/';
     }
   })();
 </script>
-<!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -56,45 +37,11 @@ s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init', '27274020995621082');
 fbq('track', 'PageView');
-
-// Generate unique event ID for deduplication
-const _metaEventId = 'sub_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-
-// Fire browser pixel Subscribe event
-fbq('track', 'Subscribe', {}, { eventID: _metaEventId });
-
-// Also send server-side via Conversions API for more accurate tracking
-(function() {
-  try {
-    // Get Facebook cookies for matching
-    const getCookie = (name) => {
-      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-      return match ? match[2] : null;
-    };
-
-    fetch('/api/meta-events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event_name: 'Subscribe',
-        event_id: _metaEventId,
-        fbp: getCookie('_fbp'),
-        fbc: getCookie('_fbc'),
-        source_url: window.location.href,
-        client_agent: navigator.userAgent,
-      })
-    }).catch(() => {});
-  } catch(e) {}
-})();
 </script>
-<noscript><img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
-/></noscript>
-<!-- End Meta Pixel Code -->
-    <meta charset="UTF-8">
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"/></noscript>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rest & Root Label Scanner</title>
-<meta name="description" content="AI-powered ingredient analyzer for clean living by Lindsay Greear, Certified Naturopath & HTMA Practitioner">
 <meta name="theme-color" content="#5C3D2E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -114,755 +61,118 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     --yellow: #E67E22;
     --yellow-light: #FDEBD0;
     --green-light: #D5F5E3;
+    --gold: #C9A464;
+    --warm-brown: #8B6F5C;
   }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--cream);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    color: var(--brown);
-    min-height: 100vh;
-  }
-
-  .header {
-    background: var(--brown);
-    padding: 20px 24px;
-    text-align: center;
-  }
-
-  .header h1 {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 28px;
-    color: var(--cream);
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-
-  .header p {
-    color: var(--blush);
-    font-size: 12px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-weight: 500;
-  }
-
-  .main {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 24px 16px 60px;
-  }
-
-  .install-banner {
-    background: var(--light-sage);
-    border: 1px solid var(--sage);
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .install-banner p { font-size: 13px; color: var(--deep-sage); font-weight: 500; }
-  .install-banner button {
-    background: var(--sage);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 14px;
-    font-size: 13px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .mode-tabs {
-    display: flex;
-    gap: 0;
-    margin-bottom: 20px;
-    border: 1px solid var(--sage);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  .mode-tab {
-    flex: 1;
-    padding: 12px;
-    font-size: 13px;
-    font-weight: 500;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    border: none;
-    cursor: pointer;
-    background: white;
-    color: var(--brown);
-    transition: all 0.2s;
-    letter-spacing: 0.5px;
-  }
-
-  .mode-tab.active {
-    background: var(--sage);
-    color: white;
-  }
-
+  body { background: var(--cream); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--brown); min-height: 100vh; }
+  .header { background: var(--brown); padding: 20px 24px; text-align: center; }
+  .header h1 { font-family: Georgia, serif; font-size: 28px; color: var(--cream); font-weight: 600; margin-bottom: 4px; }
+  .header p { color: var(--blush); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
+  .main { max-width: 600px; margin: 0 auto; padding: 24px 16px 60px; }
+  .free-scan-banner { background: linear-gradient(135deg, var(--sage), var(--deep-sage)); padding: 10px 16px; text-align: center; font-size: 12px; font-weight: 600; color: white; }
+  .profile-banner { display:none; background:#EEF4EE; padding:8px 16px; text-align:center; font-size:12px; color:#4A6E4E; font-weight:600; border-bottom:1px solid rgba(122,158,126,0.2); }
+  .mode-tabs { display: flex; gap: 0; margin-bottom: 20px; border: 1px solid var(--sage); border-radius: 8px; overflow: hidden; }
+  .mode-tab { flex: 1; padding: 12px; font-size: 13px; font-weight: 500; font-family: inherit; border: none; cursor: pointer; background: white; color: var(--brown); transition: all 0.2s; }
+  .mode-tab.active { background: var(--sage); color: white; }
   .input-section { margin-bottom: 16px; }
-
-  .upload-area {
-    border: 2px dashed var(--sage);
-    border-radius: 10px;
-    padding: 32px 20px;
-    text-align: center;
-    cursor: pointer;
-    background: white;
-    transition: all 0.2s;
-    position: relative;
-  }
-
-  .upload-area:hover { background: var(--light-sage); }
-  .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-
-  .upload-icon { font-size: 36px; margin-bottom: 10px; }
-  .upload-area h3 { font-size: 15px; font-weight: 600; color: var(--brown); margin-bottom: 6px; }
-  .upload-area p { font-size: 12px; color: #8a7a6a; }
-
-  .preview-img {
-    width: 100%;
-    max-height: 250px;
-    object-fit: contain;
-    border-radius: 8px;
-    margin-top: 12px;
-    display: none;
-  }
-
-  textarea {
-    width: 100%;
-    min-height: 130px;
-    padding: 14px;
-    font-size: 14px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    background: white;
-    color: var(--brown);
-    resize: vertical;
-  }
-
+  textarea { width: 100%; min-height: 130px; padding: 14px; font-size: 14px; font-family: inherit; border: 1px solid #ddd; border-radius: 10px; background: white; color: var(--brown); resize: vertical; }
   textarea:focus { outline: none; border-color: var(--sage); }
-
-  .examples {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 14px;
-    align-items: center;
-  }
-
+  .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
   .examples span { font-size: 12px; color: #8a7a6a; }
-
-  .example-btn {
-    font-size: 12px;
-    color: var(--sage);
-    background: none;
-    border: 1px solid var(--sage);
-    border-radius: 20px;
-    padding: 4px 12px;
-    cursor: pointer;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-weight: 500;
-  }
-
-  .scan-btn {
-    width: 100%;
-    padding: 14px;
-    font-size: 15px;
-    font-weight: 600;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    border: none;
-    border-radius: 10px;
-    background: var(--sage);
-    color: white;
-    cursor: pointer;
-    letter-spacing: 1px;
-    transition: background 0.2s;
-  }
-
+  .example-btn { font-size: 12px; color: var(--sage); background: none; border: 1px solid var(--sage); border-radius: 20px; padding: 4px 12px; cursor: pointer; font-family: inherit; font-weight: 500; }
+  .scan-btn { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; font-family: inherit; border: none; border-radius: 10px; background: var(--sage); color: white; cursor: pointer; letter-spacing: 1px; transition: background 0.2s; }
   .scan-btn:hover { background: var(--deep-sage); }
   .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
   .results { margin-top: 24px; }
-
-  .verdict-banner {
-    padding: 16px 20px;
-    border-radius: 10px;
-    margin-bottom: 16px;
-    text-align: center;
-  }
-
+  .verdict-banner { padding: 16px 20px; border-radius: 10px; margin-bottom: 16px; text-align: center; }
   .verdict-banner.danger { background: var(--red); color: white; }
   .verdict-banner.caution { background: var(--yellow); color: white; }
   .verdict-banner.safe { background: var(--deep-sage); color: white; }
-
-  .verdict-banner .verdict-text {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-
+  .verdict-banner .verdict-text { font-size: 20px; font-weight: 700; letter-spacing: 2px; margin-bottom: 4px; }
   .verdict-banner .verdict-sub { font-size: 12px; opacity: 0.85; }
-
-  .summary-card {
-    background: white;
-    border: 1px solid #e8e0d8;
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 16px;
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--brown);
-  }
-
-  .swap-tip {
-    background: var(--light-sage);
-    border-left: 3px solid var(--sage);
-    border-radius: 0 8px 8px 0;
-    padding: 12px 16px;
-    font-size: 13px;
-    color: var(--deep-sage);
-    margin-top: 10px;
-    font-weight: 500;
-  }
-
-  .diy-tip {
-    background: #F0F7F0;
-    border-left: 3px solid var(--deep-sage);
-    border-radius: 0 8px 8px 0;
-    padding: 12px 16px;
-    font-size: 13px;
-    color: var(--deep-sage);
-    margin-top: 8px;
-    line-height: 1.5;
-  }
-
-  .symptom-card {
-    background: #FFF8F0;
-    border: 1px solid #E8D5C4;
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-
-  .symptom-title {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    color: var(--brown);
-    margin-bottom: 8px;
-    text-transform: uppercase;
-  }
-
-  .symptom-text {
-    font-size: 13px;
-    color: #6a5a4a;
-    line-height: 1.7;
-  }
-
-  .education-block {
-    margin-top: 10px;
-    padding: 10px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    line-height: 1.6;
-  }
-
-  .education-block.body-impact {
-    background: #FEF9F0;
-    border-left: 2px solid var(--yellow);
-  }
-
-  .education-block.mineral {
-    background: #F0F4FE;
-    border-left: 2px solid #6B8DD6;
-  }
-
-  .education-block.carcinogen {
-    background: #FFF0F0;
-    border-left: 2px solid #E07070;
-  }
-
-  .education-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #8a7a6a;
-    margin-bottom: 4px;
-  }
-
-  .education-loading {
-    font-size: 12px;
-    color: #8a7a6a;
-    padding: 8px 0;
-  }
-
-  /* Expandable education */
-  .learn-more-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: none;
-    border: 1px solid #D0C4B8;
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--sage);
-    cursor: pointer;
-    margin-top: 8px;
-    font-family: inherit;
-    transition: all 0.2s;
-  }
-
-  .learn-more-btn:active { background: var(--light-sage); }
-
-  .education-panel {
-    display: none;
-    margin-top: 10px;
-    border-top: 1px solid #F0EBE6;
-    padding-top: 10px;
-  }
-
-  .education-panel.open { display: block; }
-
-  /* Chemical combination warning card */
-  .combination-card {
-    background: #FFF8E8;
-    border: 1px solid #F0C040;
-    border-left: 4px solid #E6A800;
-    border-radius: 10px;
-    padding: 14px;
-    margin-bottom: 10px;
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-  }
-
-  .combination-card.danger {
-    background: #FFF0F0;
-    border-color: #E57A6E;
-    border-left-color: #C0392B;
-  }
-
-  .combination-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
-
-  .combination-content { flex: 1; }
-
-  .combination-text {
-    font-size: 13px;
-    color: #5C3D2E;
-    line-height: 1.6;
-    font-weight: 500;
-  }
-
-  /* Sources */
-  .sources-block {
-    margin-top: 10px;
-    padding: 8px 12px;
-    background: #F8F6F4;
-    border-radius: 6px;
-  }
-
-  .sources-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #8a7a6a;
-    margin-bottom: 6px;
-  }
-
-  .source-link {
-    display: block;
-    font-size: 11px;
-    color: var(--sage);
-    text-decoration: none;
-    margin-bottom: 3px;
-    line-height: 1.4;
-  }
-
-  .source-link:hover { text-decoration: underline; }
-
-  .share-btn {
-    width: 100%;
-    padding: 16px;
-    background: var(--brown);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 20px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    letter-spacing: 0.5px;
-    transition: background 0.2s;
-  }
-
-  .share-btn:active { background: #3D2418; transform: scale(0.98); }
-
-  .share-caption {
-    text-align: center;
-    font-size: 11px;
-    color: #8a7a6a;
-    margin-top: 6px;
-    margin-bottom: 20px;
-  }
-
-  .share-btn-fb {
-    width: 100%;
-    padding: 14px;
-    background: white;
-    color: var(--brown);
-    border: 2px solid var(--brown);
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 8px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    letter-spacing: 0.5px;
-    transition: all 0.2s;
-  }
-
-  .share-btn-fb:active { background: var(--cream); transform: scale(0.98); }
-  .clean-celebration {
-    background: linear-gradient(135deg, #EEF4EE, #F0F7F0);
-    border: 2px solid var(--sage);
-    border-radius: 14px;
-    padding: 24px 20px;
-    margin-bottom: 16px;
-    text-align: center;
-  }
-
-  .clean-confetti {
-    font-size: 28px;
-    margin-bottom: 12px;
-    animation: bounce 0.6s ease-in-out;
-  }
-
-  @keyframes bounce {
-    0% { transform: scale(0.5); opacity: 0; }
-    60% { transform: scale(1.2); }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  .clean-headline {
-    font-family: Georgia, serif;
-    font-size: 22px;
-    font-weight: normal;
-    color: var(--deep-sage);
-    margin-bottom: 10px;
-  }
-
-  .clean-body {
-    font-size: 14px;
-    color: var(--brown);
-    line-height: 1.7;
-    margin-bottom: 12px;
-  }
-
-  .clean-encouragement {
-    font-size: 13px;
-    color: var(--deep-sage);
-    line-height: 1.6;
-    font-style: italic;
-    border-top: 1px solid rgba(122,158,126,0.2);
-    padding-top: 12px;
-    margin-top: 4px;
-  }
-
-  .section-title {
-    font-size: 10px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: #8a7a6a;
-    font-weight: 600;
-    margin: 16px 0 10px;
-  }
-
-  .flag-card {
-    background: white;
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    border-left: 3px solid var(--red);
-  }
-
+  .summary-card { background: white; border: 1px solid #e8e0d8; border-radius: 10px; padding: 16px; margin-bottom: 16px; font-size: 14px; line-height: 1.7; color: var(--brown); }
+  .swap-tip { background: var(--light-sage); border-left: 3px solid var(--sage); border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13px; color: var(--deep-sage); margin-top: 10px; font-weight: 500; }
+  .diy-tip { background: #F0F7F0; border-left: 3px solid var(--deep-sage); border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13px; color: var(--deep-sage); margin-top: 8px; line-height: 1.5; }
+  .symptom-card { background: #FFF8F0; border: 1px solid #E8D5C4; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .symptom-title { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; color: var(--brown); margin-bottom: 8px; text-transform: uppercase; }
+  .symptom-text { font-size: 13px; color: #6a5a4a; line-height: 1.7; }
+  .clean-celebration { background: linear-gradient(135deg, #EEF4EE, #F0F7F0); border: 2px solid var(--sage); border-radius: 14px; padding: 24px 20px; margin-bottom: 16px; text-align: center; }
+  .clean-confetti { font-size: 28px; margin-bottom: 12px; animation: bounce 0.6s ease-in-out; }
+  @keyframes bounce { 0% { transform: scale(0.5); opacity: 0; } 60% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+  .clean-headline { font-family: Georgia, serif; font-size: 22px; font-weight: normal; color: var(--deep-sage); margin-bottom: 10px; }
+  .clean-body { font-size: 14px; color: var(--brown); line-height: 1.7; margin-bottom: 12px; }
+  .clean-encouragement { font-size: 13px; color: var(--deep-sage); line-height: 1.6; font-style: italic; border-top: 1px solid rgba(122,158,126,0.2); padding-top: 12px; margin-top: 4px; }
+  .section-title { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #8a7a6a; font-weight: 600; margin: 16px 0 10px; }
+  .flag-card { background: white; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; border-left: 3px solid var(--red); }
   .flag-card.caution { border-left-color: var(--yellow); }
   .flag-card.safe { border-left-color: var(--deep-sage); }
-
-  .flag-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--brown);
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .risk-badge {
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 20px;
-    font-weight: 600;
-    letter-spacing: 1px;
-  }
-
+  .flag-name { font-size: 14px; font-weight: 600; color: var(--brown); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .risk-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600; letter-spacing: 1px; }
   .risk-badge.avoid { background: var(--red-light); color: var(--red); }
   .risk-badge.caution { background: var(--yellow-light); color: var(--yellow); }
   .risk-badge.safe { background: var(--green-light); color: var(--deep-sage); }
-
   .flag-reason { font-size: 13px; color: #6a5a4a; line-height: 1.6; }
   .flag-found { font-size: 12px; color: #8a7a6a; margin-top: 4px; font-style: italic; }
-
-  .extracted-box {
-    background: var(--light-sage);
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 16px;
-    font-size: 12px;
-    color: var(--deep-sage);
-    line-height: 1.6;
-  }
-
+  .extracted-box { background: var(--light-sage); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: var(--deep-sage); line-height: 1.6; }
   .extracted-box strong { display: block; margin-bottom: 4px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; }
-
-  .loading {
-    text-align: center;
-    padding: 30px;
-    color: #8a7a6a;
-    font-size: 14px;
-  }
-
+  .education-block { margin-top: 10px; padding: 10px 12px; border-radius: 6px; font-size: 12px; line-height: 1.6; }
+  .education-block.body-impact { background: #FEF9F0; border-left: 2px solid var(--yellow); }
+  .education-block.mineral { background: #F0F4FE; border-left: 2px solid #6B8DD6; }
+  .education-block.carcinogen { background: #FFF0F0; border-left: 2px solid #E07070; }
+  .education-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #8a7a6a; margin-bottom: 4px; }
+  .education-text { color: #5a4a3a; font-size: 12px; line-height: 1.6; }
+  .learn-more-btn { display: inline-flex; align-items: center; gap: 4px; background: none; border: 1px solid #D0C4B8; border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 600; color: var(--sage); cursor: pointer; margin-top: 8px; font-family: inherit; transition: all 0.2s; }
+  .education-panel { display: none; margin-top: 10px; border-top: 1px solid #F0EBE6; padding-top: 10px; }
+  .education-panel.open { display: block; }
+  .combination-card { background: #FFF8E8; border: 1px solid #F0C040; border-left: 4px solid #E6A800; border-radius: 10px; padding: 14px; margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start; }
+  .combination-card.danger { background: #FFF0F0; border-color: #E57A6E; border-left-color: #C0392B; }
+  .combination-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .combination-content { flex: 1; }
+  .combination-text { font-size: 13px; color: #5C3D2E; line-height: 1.6; font-weight: 500; }
+  .sources-block { margin-top: 10px; padding: 8px 12px; background: #F8F6F4; border-radius: 6px; }
+  .sources-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #8a7a6a; margin-bottom: 6px; }
+  .source-link { display: block; font-size: 11px; color: var(--sage); text-decoration: none; margin-bottom: 3px; line-height: 1.4; }
+  .share-btn { width: 100%; padding: 16px; background: var(--brown); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 20px; font-family: inherit; letter-spacing: 0.5px; transition: background 0.2s; }
+  .share-btn:active { background: #3D2418; transform: scale(0.98); }
+  .share-btn-fb { width: 100%; padding: 14px; background: white; color: var(--brown); border: 2px solid var(--brown); border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; font-family: inherit; transition: all 0.2s; }
+  .share-caption { text-align: center; font-size: 11px; color: #8a7a6a; margin-top: 6px; margin-bottom: 20px; }
+  .loading { text-align: center; padding: 30px; color: #8a7a6a; font-size: 14px; }
   .dots { display: inline-flex; gap: 4px; margin-left: 8px; }
   .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); animation: pulse 1.2s ease-in-out infinite; }
   .dot:nth-child(2) { animation-delay: 0.2s; }
   .dot:nth-child(3) { animation-delay: 0.4s; }
   @keyframes pulse { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
-
-  .footer {
-    text-align: center;
-    margin-top: 32px;
-    font-size: 11px;
-    color: #8a7a6a;
-    line-height: 1.6;
-  }
-
-  .hidden { display: none; }
-
-  /* FREE SCAN BANNER */
-  .free-scan-banner {
-    background: linear-gradient(135deg, var(--sage), var(--deep-sage));
-    padding: 10px 16px;
-    text-align: center;
-    font-size: 12px;
-    font-weight: 600;
-    color: white;
-    letter-spacing: 0.02em;
-  }
-
-  /* POST-SCAN PAYWALL OVERLAY */
-  .paywall-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(28, 18, 8, 0.85);
-    backdrop-filter: blur(4px);
-    z-index: 9998;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-  }
-
-  .paywall-overlay.visible {
-    opacity: 1;
-    pointer-events: all;
-  }
-
-  .paywall-sheet {
-    background: var(--cream);
-    border-radius: 24px 24px 0 0;
-    padding: 32px 24px 48px;
-    width: 100%;
-    max-width: 480px;
-    transform: translateY(100%);
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .paywall-overlay.visible .paywall-sheet {
-    transform: translateY(0);
-  }
-
-  .paywall-handle {
-    width: 36px;
-    height: 4px;
-    background: rgba(92,61,46,0.15);
-    border-radius: 2px;
-    margin: 0 auto 24px;
-  }
-
-  .paywall-headline {
-    font-family: Georgia, serif;
-    font-size: 26px;
-    font-weight: normal;
-    color: var(--bark);
-    text-align: center;
-    margin-bottom: 8px;
-    line-height: 1.25;
-  }
-
-  .paywall-sub {
-    font-size: 14px;
-    color: var(--warm-brown);
-    text-align: center;
-    margin-bottom: 28px;
-    line-height: 1.6;
-  }
-
-  .paywall-plans {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .paywall-plan {
-    border-radius: 14px;
-    padding: 16px 18px;
-    border: 2px solid transparent;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.2s;
-    background: white;
-    box-shadow: 0 2px 10px rgba(92,61,46,0.06);
-  }
-
-  .paywall-plan.featured {
-    border-color: var(--gold);
-  }
-
-  .paywall-plan.selected {
-    border-color: var(--sage);
-    background: var(--light-sage);
-  }
-
-  .paywall-plan-badge {
-    position: absolute;
-    top: -9px;
-    right: 14px;
-    background: var(--gold);
-    color: white;
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 2px 10px;
-    border-radius: 100px;
-  }
-
-  .paywall-plan-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 4px;
-  }
-
-  .paywall-plan-name {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--bark);
-  }
-
-  .paywall-plan-price {
-    font-family: Georgia, serif;
-    font-size: 20px;
-    font-weight: bold;
-    color: var(--bark);
-    text-align: right;
-    line-height: 1;
-  }
-
-  .paywall-plan-period {
-    font-size: 10px;
-    color: var(--warm-brown);
-    font-family: -apple-system, sans-serif;
-  }
-
-  .paywall-plan-detail {
-    font-size: 12px;
-    color: var(--deep-sage);
-    font-weight: 600;
-  }
-
-  .paywall-plan-detail.secondary {
-    color: var(--warm-brown);
-    font-weight: normal;
-  }
-
-  .paywall-cta {
-    width: 100%;
-    padding: 18px;
-    background: var(--sage);
-    color: white;
-    border: none;
-    border-radius: 14px;
-    font-size: 17px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    margin-bottom: 8px;
-    box-shadow: 0 4px 16px rgba(122,158,126,0.4);
-    transition: all 0.2s;
-  }
-
-  .paywall-cta:active { transform: scale(0.98); background: var(--deep-sage); }
-
-  .paywall-trust {
-    text-align: center;
-    font-size: 11px;
-    color: var(--warm-brown);
-    margin-bottom: 16px;
-  }
-
-  .paywall-no-thanks {
-    width: 100%;
-    background: none;
-    border: none;
-    color: var(--warm-brown);
-    font-size: 13px;
-    cursor: pointer;
-    font-family: inherit;
-    padding: 8px;
-    text-decoration: underline;
-  }
+  .footer { text-align: center; margin-top: 32px; font-size: 11px; color: #8a7a6a; line-height: 1.6; }
+  .paywall-overlay { position: fixed; inset: 0; background: rgba(28,18,8,0.85); backdrop-filter: blur(4px); z-index: 9998; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+  .paywall-overlay.visible { opacity: 1; pointer-events: all; }
+  .paywall-sheet { background: var(--cream); border-radius: 24px 24px 0 0; padding: 32px 24px 48px; width: 100%; max-width: 480px; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4,0,0.2,1); }
+  .paywall-overlay.visible .paywall-sheet { transform: translateY(0); }
+  .paywall-handle { width: 36px; height: 4px; background: rgba(92,61,46,0.15); border-radius: 2px; margin: 0 auto 24px; }
+  .paywall-headline { font-family: Georgia, serif; font-size: 26px; font-weight: normal; color: var(--brown); text-align: center; margin-bottom: 8px; line-height: 1.25; }
+  .paywall-sub { font-size: 14px; color: var(--warm-brown); text-align: center; margin-bottom: 28px; line-height: 1.6; }
+  .paywall-plans { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .paywall-plan { border-radius: 14px; padding: 16px 18px; border: 2px solid transparent; cursor: pointer; position: relative; transition: all 0.2s; background: white; box-shadow: 0 2px 10px rgba(92,61,46,0.06); }
+  .paywall-plan.featured { border-color: var(--gold); }
+  .paywall-plan.selected { border-color: var(--sage); background: var(--light-sage); }
+  .paywall-plan-badge { position: absolute; top: -9px; right: 14px; background: var(--gold); color: white; font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 10px; border-radius: 100px; }
+  .paywall-plan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .paywall-plan-name { font-size: 15px; font-weight: 700; color: var(--brown); }
+  .paywall-plan-price { font-family: Georgia, serif; font-size: 20px; font-weight: bold; color: var(--brown); text-align: right; line-height: 1; }
+  .paywall-plan-period { font-size: 10px; color: var(--warm-brown); font-family: -apple-system, sans-serif; }
+  .paywall-plan-detail { font-size: 12px; color: var(--deep-sage); font-weight: 600; }
+  .paywall-plan-detail.secondary { color: var(--warm-brown); font-weight: normal; }
+  .paywall-cta { width: 100%; padding: 18px; background: var(--sage); color: white; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer; font-family: inherit; margin-bottom: 8px; box-shadow: 0 4px 16px rgba(122,158,126,0.4); transition: all 0.2s; }
+  .paywall-trust { text-align: center; font-size: 11px; color: var(--warm-brown); margin-bottom: 16px; }
+  .paywall-no-thanks { width: 100%; background: none; border: none; color: var(--warm-brown); font-size: 13px; cursor: pointer; font-family: inherit; padding: 8px; text-decoration: underline; }
 </style>
 </head>
 <body>
 
-<!-- Free scan banner — shows for non-subscribers on their free scan -->
 <div class="free-scan-banner" id="freeScanBanner" style="display:none;">
   🌿 You have 1 free scan — make it count!
 </div>
-
-<!-- Wellness profile indicator -->
-<div id="profileBanner" style="display:none;background:#EEF4EE;padding:8px 16px;text-align:center;font-size:12px;color:#4A6E4E;font-weight:600;border-bottom:1px solid rgba(122,158,126,0.2);">
+<div class="profile-banner" id="profileBanner">
   🌿 Scanning personalized to your wellness profile · <a href="/" style="color:#7A9E7E;text-decoration:underline;">Update</a>
 </div>
 
@@ -871,63 +181,39 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
   <p>Certified Naturopath & HTMA Practitioner</p>
 </div>
 
-<!-- POST-SCAN PAYWALL OVERLAY -->
 <div class="paywall-overlay" id="paywallOverlay">
-  <div class="paywall-sheet">
+  <div class="paywall-sheet" id="paywallSheet">
     <div class="paywall-handle"></div>
     <div class="paywall-headline">Want to keep scanning?</div>
     <div class="paywall-sub">Join the people who actually know what's in their products.</div>
-
     <div class="paywall-plans">
-      <!-- Annual — featured -->
       <div class="paywall-plan featured selected" id="pw-annual" onclick="selectPaywallPlan('annual')">
         <div class="paywall-plan-badge">Best Value</div>
         <div class="paywall-plan-header">
           <div class="paywall-plan-name">Annual Access</div>
-          <div>
-            <div class="paywall-plan-price">$120</div>
-            <div class="paywall-plan-period">/year</div>
-          </div>
+          <div><div class="paywall-plan-price">$120</div><div class="paywall-plan-period">/year</div></div>
         </div>
-        <div class="paywall-plan-detail">Just $10/month — works out to less than a coffee a month ☕</div>
+        <div class="paywall-plan-detail">Just $10/month — less than a coffee a month ☕</div>
       </div>
-
-      <!-- Monthly -->
       <div class="paywall-plan" id="pw-monthly" onclick="selectPaywallPlan('monthly')">
         <div class="paywall-plan-header">
           <div class="paywall-plan-name">Monthly Access</div>
-          <div>
-            <div class="paywall-plan-price">$12.99</div>
-            <div class="paywall-plan-period">/month</div>
-          </div>
+          <div><div class="paywall-plan-price">$12.99</div><div class="paywall-plan-period">/month</div></div>
         </div>
         <div class="paywall-plan-detail secondary">Flexible — cancel anytime</div>
       </div>
     </div>
-
     <div class="paywall-trust">7-day free trial included · No charge today · Cancel anytime</div>
-
-    <button class="paywall-cta" id="paywallCta" onclick="startPaywallPurchase()">
-      See My Options →
-    </button>
-
-    <button class="paywall-no-thanks" onclick="noThanksPaywall()">
-      No thanks, I only needed one scan
-    </button>
+    <button class="paywall-cta" onclick="startPaywallPurchase()">See My Options →</button>
+    <button class="paywall-no-thanks" onclick="noThanksPaywall()">No thanks, I only needed one scan</button>
   </div>
 </div>
 
 <div class="main">
 
-  <!-- PWA Install Banner -->
-  <div class="install-banner hidden" id="installBanner">
-    <p>📲 Add to your home screen for quick access!</p>
-    <button onclick="installPWA()">Install App</button>
-  </div>
-
   <div class="mode-tabs">
-    <button class="mode-tab active" onclick="setMode('photo')">📷 Scan a Photo</button>
-    <button class="mode-tab" onclick="setMode('text')">✏️ Type Ingredients</button>
+    <button class="mode-tab active" id="tab-photo" onclick="setMode('photo')">📷 Scan a Photo</button>
+    <button class="mode-tab" id="tab-text" onclick="setMode('text')">✏️ Type Ingredients</button>
   </div>
 
   <!-- PHOTO MODE -->
@@ -943,13 +229,13 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       </label>
     </div>
     <div id="previewContainer" style="display:none;margin-bottom:8px;text-align:center;">
-      <img id="previewImg" src="" alt="Label preview" style="display:none;width:100%;max-height:250px;object-fit:contain;border-radius:8px;">
+      <img id="previewImg" src="" alt="Label preview" style="width:100%;max-height:250px;object-fit:contain;border-radius:8px;display:block;">
       <p style="font-size:12px;color:#7A9E7E;margin-top:6px;font-weight:600;">✅ Photo loaded — tap Scan below</p>
     </div>
   </div>
 
   <!-- TEXT MODE -->
-  <div id="text-mode" class="input-section hidden">
+  <div id="text-mode" class="input-section" style="display:none;">
     <div class="examples">
       <span>Try an example:</span>
       <button class="example-btn" onclick="loadExample('skincare')">Moisturizer</button>
@@ -960,7 +246,6 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
   </div>
 
   <button class="scan-btn" id="scanBtn" onclick="scan()">🔍 Scan These Ingredients</button>
-
   <div class="results" id="results"></div>
 
   <div class="footer">
@@ -968,114 +253,128 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     <p>Lindsay Greear — Certified Naturopath & HTMA Practitioner</p>
     <p>For educational purposes only. Not medical advice.</p>
   </div>
-
 </div>
 
 <script>
   let currentMode = 'photo';
   let photoData = null;
   let photoMediaType = null;
-  let deferredPrompt = null;
   let isSubscriber = false;
   let paywallPlan = 'annual';
+  let lastScanData = null;
+  let deferredPrompt = null;
 
-  const PRODUCTS = {
-    monthly: 'TWIAP793',
-    annual: 'TWIAP510'
-  };
+  const PRODUCTS = { monthly: 'TWIAP793', annual: 'TWIAP510' };
 
-  // Check if subscriber or free scan user
-  function initScanner() {
+  // Init
+  (function init() {
     isSubscriber = localStorage.getItem('rr_unlocked') === 'true';
     const hasFreeScan = localStorage.getItem('rr_free_scan_available') === 'true';
     const freeScanUsed = localStorage.getItem('rr_free_scan_used') === 'true';
-
-    // Show free scan banner for non-subscribers
     if (!isSubscriber && hasFreeScan && !freeScanUsed) {
       document.getElementById('freeScanBanner').style.display = 'block';
     }
+    const savedProfile = JSON.parse(localStorage.getItem('rr_wellness_profile') || '[]');
+    if (savedProfile.length > 0) {
+      document.getElementById('profileBanner').style.display = 'block';
+    }
+    try { fbq('track', 'ViewContent', { content_name: isSubscriber ? 'scanner_subscriber' : 'scanner_free_user' }); } catch(e) {}
+  })();
 
-    // Track scanner open
-    try {
-      fbq('track', 'ViewContent', {
-        content_name: isSubscriber ? 'scanner_subscriber' : 'scanner_free_user'
-      });
-    } catch(e) {}
+  // Mode switching — uses display style, not hidden class
+  function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('photo-mode').style.display = mode === 'photo' ? 'block' : 'none';
+    document.getElementById('text-mode').style.display = mode === 'text' ? 'block' : 'none';
+    document.getElementById('tab-photo').classList.toggle('active', mode === 'photo');
+    document.getElementById('tab-text').classList.toggle('active', mode === 'text');
+    document.getElementById('results').innerHTML = '';
+    if (mode === 'text') {
+      setTimeout(() => { const ta = document.getElementById('ingredients'); if (ta) ta.focus(); }, 100);
+    }
   }
 
-  // Show wellness profile banner if profile exists
-  const savedProfile = JSON.parse(localStorage.getItem('rr_wellness_profile') || '[]');
-  if (savedProfile.length > 0) {
-    document.getElementById('profileBanner').style.display = 'block';
+  // Photo handling — uses URL.createObjectURL for instant preview
+  function handlePhoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Show preview immediately using object URL
+    const objectUrl = URL.createObjectURL(file);
+    const previewImg = document.getElementById('previewImg');
+    const previewContainer = document.getElementById('previewContainer');
+
+    previewImg.src = objectUrl;
+    previewContainer.style.display = 'block';
+
+    // Read as base64 for API
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      photoData = dataUrl.split(',')[1];
+      photoMediaType = file.type || 'image/jpeg';
+      document.getElementById('scanBtn').textContent = '🔍 Scan This Label';
+    };
+    reader.onerror = () => {
+      // Fallback if FileReader fails
+      photoData = null;
+      photoMediaType = 'image/jpeg';
+    };
+    reader.readAsDataURL(file);
   }
 
-  initScanner();
+  function loadExample(type) {
+    const examples = {
+      skincare: "Water, Glycerin, Methylparaben, Fragrance, Sodium Lauryl Sulfate, Propylparaben, Dimethicone, Phenoxyethanol",
+      food: "Enriched Flour, High Fructose Corn Syrup, Red 40, Yellow 5, Sodium Nitrite, BHT, Natural Flavors, Carrageenan",
+      cleaning: "Water, Sodium Hypochlorite, Fragrance, Benzalkonium Chloride, Ammonium Hydroxide, Sodium Lauryl Sulfate"
+    };
+    document.getElementById('ingredients').value = examples[type];
+    setMode('text');
+  }
 
-  // Paywall plan selection
+  // Paywall functions
   function selectPaywallPlan(plan) {
     paywallPlan = plan;
     document.getElementById('pw-annual').classList.toggle('selected', plan === 'annual');
     document.getElementById('pw-monthly').classList.toggle('selected', plan === 'monthly');
   }
 
-  // Show paywall after free scan
-  function noThanksPaywall() {
-    // Show a holding screen instead of letting them scan again
-    const overlay = document.getElementById('paywallOverlay');
-    const sheet = overlay.querySelector('.paywall-sheet');
-    sheet.innerHTML = `
-      <div style="text-align:center;padding:20px 0;">
-        <div style="font-size:48px;margin-bottom:16px;">🌿</div>
-        <div style="font-family:Georgia,serif;font-size:22px;color:#5C3D2E;margin-bottom:12px;">
-          Come back anytime.
-        </div>
-        <div style="font-size:14px;color:#8B6F5C;line-height:1.7;margin-bottom:24px;">
-          Your free scan result is saved above.<br>
-          When you're ready to keep scanning,<br>
-          we'll be here. 🌿
-        </div>
-        <button onclick="startPaywallPurchase()" style="
-          width:100%;padding:16px;background:#7A9E7E;color:white;
-          border:none;border-radius:12px;font-size:16px;font-weight:700;
-          cursor:pointer;font-family:inherit;margin-bottom:12px;">
-          Actually, I'm ready → 
-        </button>
-        <div style="font-size:11px;color:#8B6F5C;">
-          7-day free trial · Cancel anytime
-        </div>
-      </div>
-    `;
-  }
+  function showPaywall() {
     const overlay = document.getElementById('paywallOverlay');
     overlay.classList.add('visible');
-    // Prevent dismissal by tapping outside for non-subscribers
-    overlay.onclick = function(e) {
-      if (e.target === overlay && isSubscriber) {
-        dismissPaywall();
-      }
-      // Do nothing if not a subscriber — hard gate
-    };
+    overlay.onclick = function(e) { if (e.target === overlay && isSubscriber) dismissPaywall(); };
     try { fbq('track', 'ViewContent', { content_name: 'paywall_post_scan' }); } catch(e) {}
   }
 
   function dismissPaywall() {
-    // Only allow dismissal if subscriber
     if (!isSubscriber) return;
-    const overlay = document.getElementById('paywallOverlay');
-    overlay.classList.remove('visible');
+    document.getElementById('paywallOverlay').classList.remove('visible');
   }
 
-  // Start purchase from paywall
+  function noThanksPaywall() {
+    document.getElementById('paywallSheet').innerHTML = `
+      <div style="text-align:center;padding:20px 0;">
+        <div style="font-size:48px;margin-bottom:16px;">🌿</div>
+        <div style="font-family:Georgia,serif;font-size:22px;color:#5C3D2E;margin-bottom:12px;">Come back anytime.</div>
+        <div style="font-size:14px;color:#8B6F5C;line-height:1.7;margin-bottom:24px;">
+          Your free scan result is saved above.<br>When you're ready to keep scanning,<br>we'll be here. 🌿
+        </div>
+        <button onclick="startPaywallPurchase()" style="width:100%;padding:16px;background:#7A9E7E;color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px;">
+          Actually, I'm ready →
+        </button>
+        <div style="font-size:11px;color:#8B6F5C;">7-day free trial · Cancel anytime</div>
+      </div>
+    `;
+  }
+
   function startPaywallPurchase() {
     const productId = PRODUCTS[paywallPlan];
     window.location.href = `inapppurchase://twinr.dev?product_id=${productId}`;
     if (window.TwinrBridge) window.TwinrBridge.purchase(productId);
-
-    // Track CTA click
     try { fbq('track', 'InitiateCheckout', { content_name: paywallPlan + '_trial' }); } catch(e) {}
   }
 
-  // Listen for purchase success
   window.addEventListener('message', (event) => {
     try {
       const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
@@ -1086,136 +385,35 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
         isSubscriber = true;
         dismissPaywall();
         document.getElementById('freeScanBanner').style.display = 'none';
-
-        // Track subscription
         try { fbq('track', 'Subscribe'); } catch(e) {}
       }
     } catch(e) {}
   });
 
-  // PWA Install prompt
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    document.getElementById('installBanner').classList.remove('hidden');
-  });
+  // PWA
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => {}); }
 
-  window.addEventListener('appinstalled', () => {
-    document.getElementById('installBanner').classList.add('hidden');
-    deferredPrompt = null;
-  });
-
-  async function installPWA() {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    document.getElementById('installBanner').classList.add('hidden');
-  }
-
-  // Register service worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  }
-
-  function setMode(mode) {
-    currentMode = mode;
-    document.querySelectorAll('.mode-tab').forEach((t, i) => {
-      t.classList.toggle('active', (i === 0 && mode === 'photo') || (i === 1 && mode === 'text'));
-    });
-    document.getElementById('photo-mode').classList.toggle('hidden', mode !== 'photo');
-    document.getElementById('text-mode').classList.toggle('hidden', mode !== 'text');
-    document.getElementById('results').innerHTML = '';
-  }
-
-  function handlePhoto(input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    // Use object URL — most reliable across all webviews
-    const objectUrl = URL.createObjectURL(file);
-    const container = document.getElementById('previewContainer');
-    const img = document.getElementById('previewImg');
-    const scanBtn = document.getElementById('scanBtn');
-
-    // Show preview immediately
-    if (img) {
-      img.src = objectUrl;
-      img.style.display = 'block';
-    }
-    if (container) {
-      container.style.display = 'block';
-    }
-
-    // Read as base64 for API in background
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target.result;
-      photoData = dataUrl.split(',')[1];
-      photoMediaType = file.type || 'image/jpeg';
-      if (scanBtn) {
-        scanBtn.textContent = '🔍 Scan This Label';
-      }
-    };
-    reader.onerror = () => {
-      // Fallback — convert object URL to base64 via img element
-      const tempImg = new Image();
-      tempImg.crossOrigin = 'anonymous';
-      tempImg.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = tempImg.naturalWidth;
-        canvas.height = tempImg.naturalHeight;
-        canvas.getContext('2d').drawImage(tempImg, 0, 0);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        photoData = dataUrl.split(',')[1];
-        photoMediaType = 'image/jpeg';
-      };
-      tempImg.src = objectUrl;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function loadExample(type) {
-    const examples = {
-      skincare: "Water, Glycerin, Methylparaben, Fragrance, Sodium Lauryl Sulfate, Propylparaben, Dimethicone, Phenoxyethanol, Tocopheryl Acetate, Carbomer",
-      food: "Enriched Flour, High Fructose Corn Syrup, Red 40, Yellow 5, Sodium Nitrite, BHT, Partially Hydrogenated Soybean Oil, Natural Flavors, Carrageenan",
-      cleaning: "Water, Sodium Hypochlorite, Fragrance, Benzalkonium Chloride, Ammonium Hydroxide, Sodium Lauryl Sulfate, Optical Brighteners"
-    };
-    document.getElementById('ingredients').value = examples[type];
-    setMode('text');
-  }
-
+  // Scan function
   async function scan() {
     const btn = document.getElementById('scanBtn');
     const results = document.getElementById('results');
 
-    // Check if free scan already used and not a subscriber
+    // Gate: check free scan status
     if (!isSubscriber) {
       const freeScanUsed = localStorage.getItem('rr_free_scan_used') === 'true';
       const freeScanAvailable = localStorage.getItem('rr_free_scan_available') === 'true';
-      const unlocked = localStorage.getItem('rr_unlocked') === 'true';
 
-      // Double check subscription via Twinr in case localStorage is stale
-      if (!unlocked) {
-        try {
-          const purchases = await twinr_get_iap_purchases();
-          if (Array.isArray(purchases) && purchases.length > 0) {
-            localStorage.setItem('rr_unlocked', 'true');
-            isSubscriber = true;
-          }
-        } catch(e) {
-          // Not in Twinr context or no purchases — continue with localStorage state
+      // Re-check Twinr in case localStorage is stale
+      try {
+        const purchases = await twinr_get_iap_purchases();
+        if (Array.isArray(purchases) && purchases.length > 0) {
+          localStorage.setItem('rr_unlocked', 'true');
+          isSubscriber = true;
         }
-      }
+      } catch(e) {}
 
-      // Re-check after Twinr purchase check
-      if (!isSubscriber && freeScanUsed) {
-        showPaywall();
-        return;
-      }
-
-      // If no free scan available and not used yet — give them one
-      // This handles edge cases where localStorage got cleared
+      if (!isSubscriber && freeScanUsed) { showPaywall(); return; }
       if (!isSubscriber && !freeScanAvailable && !freeScanUsed) {
         localStorage.setItem('rr_free_scan_available', 'true');
       }
@@ -1225,7 +423,6 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       results.innerHTML = '<div class="summary-card" style="text-align:center;">📷 Please take or choose a photo first!</div>';
       return;
     }
-
     if (currentMode === 'text' && !document.getElementById('ingredients').value.trim()) {
       results.innerHTML = '<div class="summary-card">Please paste some ingredients first!</div>';
       return;
@@ -1235,13 +432,7 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     btn.innerHTML = 'Scanning<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
     results.innerHTML = '<div class="loading" id="loadingMsg">Reading your label<span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span></div>';
 
-    // Rotating loading messages
-    const loadingMessages = [
-      'Reading your label',
-      'Checking ingredients',
-      'Looking for red flags',
-      'Almost ready'
-    ];
+    const loadingMessages = ['Reading your label','Checking ingredients','Looking for red flags','Almost ready'];
     let msgIndex = 0;
     const msgInterval = setInterval(() => {
       msgIndex = (msgIndex + 1) % loadingMessages.length;
@@ -1251,12 +442,10 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
     try {
       const wellnessProfile = JSON.parse(localStorage.getItem('rr_wellness_profile') || '[]');
-
       const body = currentMode === 'photo'
         ? { image: { data: photoData, mediaType: photoMediaType }, wellness_profile: wellnessProfile }
         : { ingredients: document.getElementById('ingredients').value.trim(), wellness_profile: wellnessProfile };
 
-      // CALL 1 — Fast scan (verdict + flags)
       const response = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1265,29 +454,20 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const data = await response.json();
-
-      // Clear loading messages
       clearInterval(msgInterval);
-
-      // Show results immediately
       renderResults(data);
-
       btn.disabled = false;
       btn.innerHTML = '🔍 Scan These Ingredients';
 
-      // If free scan user — mark free scan as used and show paywall
       if (!isSubscriber) {
         localStorage.setItem('rr_free_scan_used', 'true');
         localStorage.removeItem('rr_free_scan_available');
         document.getElementById('freeScanBanner').style.display = 'none';
-        setTimeout(() => { showPaywall(); }, 2000);
+        setTimeout(() => showPaywall(), 2000);
       }
 
-      // CALL 2 — Load education in background — delay 1 second so it doesn't compete
       const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
-      if (flagged.length > 0) {
-        setTimeout(() => { loadEducationInBackground(flagged); }, 1000);
-      }
+      if (flagged.length > 0) setTimeout(() => loadEducationInBackground(flagged), 1000);
 
     } catch (err) {
       clearInterval(msgInterval);
@@ -1302,94 +482,40 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       const response = await fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          education_only: true,
-          flags_for_education: flaggedIngredients
-        })
+        body: JSON.stringify({ education_only: true, flags_for_education: flaggedIngredients })
       });
-
       if (!response.ok) return;
       const eduData = await response.json();
 
-      // Inject overall symptoms if we got it
       if (eduData.overall_symptoms) {
         const symptomCard = document.getElementById('symptom-card');
         if (symptomCard) {
-          symptomCard.innerHTML = `
-            <div class="symptom-title">🔍 What your body may be feeling</div>
-            <div class="symptom-text">${eduData.overall_symptoms}</div>
-          `;
+          symptomCard.innerHTML = `<div class="symptom-title">🔍 What your body may be feeling</div><div class="symptom-text">${eduData.overall_symptoms}</div>`;
           symptomCard.style.display = 'block';
         }
       }
 
-      // Inject education into each learn more panel
       if (eduData.education) {
         flaggedIngredients.forEach((flag, i) => {
           const panel = document.getElementById('edu-' + i);
           if (!panel) return;
-
           const edu = eduData.education[flag.name] || eduData.education[flag.name.toLowerCase()] || {};
           const sources = flag.sources || [];
-
           let eduHtml = '';
-
-          if (edu.body_impact) {
-            eduHtml += `
-              <div class="education-block body-impact">
-                <div class="education-label">💊 What this does in your body</div>
-                <div class="education-text">${edu.body_impact}</div>
-              </div>`;
-          }
-
-          if (edu.mineral_depletion) {
-            eduHtml += `
-              <div class="education-block mineral">
-                <div class="education-label">⚡ Minerals affected</div>
-                <div class="education-text">${edu.mineral_depletion}</div>
-              </div>`;
-          }
-
-          if (edu.carcinogen_info) {
-            eduHtml += `
-              <div class="education-block carcinogen">
-                <div class="education-label">⚠️ Carcinogen info</div>
-                <div class="education-text">${edu.carcinogen_info}</div>
-              </div>`;
-          }
-
-          if (edu.symptom_connections) {
-            eduHtml += `
-              <div class="education-block body-impact">
-                <div class="education-label">🩺 Symptoms to watch for</div>
-                <div class="education-text">${edu.symptom_connections}</div>
-              </div>`;
-          }
-
-          if (sources.length > 0) {
-            eduHtml += `
-              <div class="sources-block">
-                <div class="sources-label">📚 Sources</div>
-                ${sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}
-              </div>`;
-          }
-
+          if (edu.body_impact) eduHtml += `<div class="education-block body-impact"><div class="education-label">💊 What this does in your body</div><div class="education-text">${edu.body_impact}</div></div>`;
+          if (edu.mineral_depletion) eduHtml += `<div class="education-block mineral"><div class="education-label">⚡ Minerals affected</div><div class="education-text">${edu.mineral_depletion}</div></div>`;
+          if (edu.carcinogen_info) eduHtml += `<div class="education-block carcinogen"><div class="education-label">⚠️ Carcinogen info</div><div class="education-text">${edu.carcinogen_info}</div></div>`;
+          if (edu.symptom_connections) eduHtml += `<div class="education-block body-impact"><div class="education-label">🩺 Symptoms to watch for</div><div class="education-text">${edu.symptom_connections}</div></div>`;
+          if (sources.length > 0) eduHtml += `<div class="sources-block"><div class="sources-label">📚 Sources</div>${sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}</div>`;
           if (eduHtml) {
             panel.innerHTML = eduHtml;
-            // Show the learn more button now that content is ready
             const btn = document.getElementById('btn-' + i);
             if (btn) btn.style.display = 'inline-flex';
           }
         });
       }
-
-    } catch(e) {
-      console.log('Education load failed:', e);
-    }
+    } catch(e) {}
   }
-
-  // Store last scan result for sharing
-  let lastScanData = null;
 
   function toggleEducation(id) {
     const panel = document.getElementById('edu-' + id);
@@ -1410,37 +536,14 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     const verdictEmoji = verdict === 'PUT IT BACK' ? '⛔' : verdict === 'CAUTION' ? '⚠️' : '✅';
     const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
     const safe = (data.flags || []).filter(f => f.risk === 'SAFE');
+    const verdictSubs = { 'PUT IT BACK': 'Okay we need to talk about this one.', 'CAUTION': 'Not the worst, but not the best either.', 'LOOKS CLEAN': 'Yes!! This one actually passed. 🎉' };
 
-    const verdictSubs = {
-      'PUT IT BACK': 'Okay we need to talk about this one.',
-      'CAUTION': 'Not the worst, but not the best either.',
-      'LOOKS CLEAN': 'Yes!! This one actually passed. 🎉'
-    };
+    let html = `<div class="verdict-banner ${verdictClass}"><div class="verdict-text">${verdictEmoji} ${verdict}</div><div class="verdict-sub">${verdictSubs[verdict] || ''}</div></div>`;
 
-    let html = `
-      <div class="verdict-banner ${verdictClass}">
-        <div class="verdict-text">${verdictEmoji} ${verdict}</div>
-        <div class="verdict-sub">${verdictSubs[verdict] || ''}</div>
-      </div>
-    `;
-
-    if (data.extracted_ingredients) {
-      html += `<div class="extracted-box"><strong>Ingredients found in photo</strong>${data.extracted_ingredients}</div>`;
-    }
+    if (data.extracted_ingredients) html += `<div class="extracted-box"><strong>Ingredients found in photo</strong>${data.extracted_ingredients}</div>`;
 
     if (verdict === 'LOOKS CLEAN') {
-      html += `
-        <div class="clean-celebration">
-          <div class="clean-confetti">🎉✨🌿✨🎉</div>
-          <div class="clean-headline">You found a good one!</div>
-          <div class="clean-body">${data.summary}</div>
-          <div class="clean-encouragement">
-            You're making better choices than you probably even realize.
-            Every clean product is a win. Keep this one in your rotation. 🌿
-          </div>
-          ${data.swap_tip ? `<div class="swap-tip">💡 ${data.swap_tip}</div>` : ''}
-        </div>
-      `;
+      html += `<div class="clean-celebration"><div class="clean-confetti">🎉✨🌿✨🎉</div><div class="clean-headline">You found a good one!</div><div class="clean-body">${data.summary}</div><div class="clean-encouragement">You're making better choices than you probably even realize. Every clean product is a win. Keep this one in your rotation. 🌿</div>${data.swap_tip ? `<div class="swap-tip">💡 ${data.swap_tip}</div>` : ''}</div>`;
     } else {
       html += `<div class="summary-card">${data.summary}`;
       if (data.swap_tip) html += `<div class="swap-tip">💡 ${data.swap_tip}</div>`;
@@ -1454,18 +557,7 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       html += `<div class="section-title">⚗️ Chemical combination alerts</div>`;
       data.combination_warnings.forEach(combo => {
         const isDanger = combo.severity === 'DANGER';
-        html += `
-          <div class="combination-card ${isDanger ? 'danger' : ''}">
-            <div class="combination-icon">${isDanger ? '🚨' : '⚗️'}</div>
-            <div class="combination-content">
-              <div class="combination-text">${combo.warning}</div>
-              ${combo.sources && combo.sources.length > 0 ? `
-                <div class="sources-block" style="margin-top:8px;">
-                  <div class="sources-label">📚 Sources</div>
-                  ${combo.sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}
-                </div>` : ''}
-            </div>
-          </div>`;
+        html += `<div class="combination-card ${isDanger ? 'danger' : ''}"><div class="combination-icon">${isDanger ? '🚨' : '⚗️'}</div><div class="combination-content"><div class="combination-text">${combo.warning}</div>${combo.sources && combo.sources.length > 0 ? `<div class="sources-block" style="margin-top:8px;"><div class="sources-label">📚 Sources</div>${combo.sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}</div>` : ''}</div></div>`;
       });
     }
 
@@ -1474,41 +566,20 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       flagged.forEach((f, i) => {
         const cls = f.risk === 'AVOID' ? 'danger' : 'caution';
         const badgeCls = f.risk === 'AVOID' ? 'avoid' : 'caution';
-        html += `
-          <div class="flag-card ${cls}">
-            <div class="flag-name">${f.name} <span class="risk-badge ${badgeCls}">${f.risk}</span></div>
-            <div class="flag-reason">${f.reason}</div>
-            ${f.found_in ? `<div class="flag-found">Also hides in: ${f.found_in}</div>` : ''}
-            <button class="learn-more-btn" id="btn-${i}" onclick="toggleEducation(${i})" style="display:none;">+ Learn more</button>
-            <div class="education-panel" id="edu-${i}"></div>
-          </div>`;
+        html += `<div class="flag-card ${cls}"><div class="flag-name">${f.name} <span class="risk-badge ${badgeCls}">${f.risk}</span></div><div class="flag-reason">${f.reason}</div>${f.found_in ? `<div class="flag-found">Also hides in: ${f.found_in}</div>` : ''}<button class="learn-more-btn" id="btn-${i}" onclick="toggleEducation(${i})" style="display:none;">+ Learn more</button><div class="education-panel" id="edu-${i}"></div></div>`;
       });
     }
 
     if (safe.length > 0) {
-      html += `<div class="section-title">Recognized safe ingredients</div>`;
-      html += `<div class="flag-card safe"><div class="flag-reason">${safe.map(f => f.name).join(' · ')}</div></div>`;
+      html += `<div class="section-title">Recognized safe ingredients</div><div class="flag-card safe"><div class="flag-reason">${safe.map(f => f.name).join(' · ')}</div></div>`;
     }
 
     if (flagged.length === 0 && verdict === 'LOOKS CLEAN') {
       html += `<div class="flag-card safe"><div class="flag-reason">No red flag ingredients detected — this one's a keeper! 🌿</div></div>`;
     }
 
-    const shareLabels = {
-      'PUT IT BACK': '😳 Share This Scan',
-      'CAUTION': '👀 Share This Scan',
-      'LOOKS CLEAN': '🎉 Share This Win'
-    };
-
-    html += `
-      <button class="share-btn" onclick="shareResult()">
-        ${shareLabels[verdict] || '📲 Share This Scan'}
-      </button>
-      <button class="share-btn-fb" onclick="saveForFacebook()">
-        💾 Save for Facebook
-      </button>
-      <div class="share-caption">${verdict === 'LOOKS CLEAN' ? 'Show your people what clean actually looks like 🌿' : 'Your people need to know about this 🌿'}</div>
-    `;
+    const shareLabels = { 'PUT IT BACK': '😳 Share This Scan', 'CAUTION': '👀 Share This Scan', 'LOOKS CLEAN': '🎉 Share This Win' };
+    html += `<button class="share-btn" onclick="shareResult()">${shareLabels[verdict] || '📲 Share This Scan'}</button><button class="share-btn-fb" onclick="saveForFacebook()">💾 Save for Facebook</button><div class="share-caption">${verdict === 'LOOKS CLEAN' ? 'Show your people what clean actually looks like 🌿' : 'Your people need to know about this 🌿'}</div>`;
 
     document.getElementById('results').innerHTML = html;
     document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1516,316 +587,80 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
   async function saveForFacebook() {
     if (!lastScanData) return;
-
     const verdict = lastScanData.verdict;
     const flagged = (lastScanData.flags || []).filter(f => f.risk !== 'SAFE');
-
-    // Build caption text
     let caption = '';
     if (verdict === 'PUT IT BACK') {
       caption = `okay I need you to scan your products RIGHT NOW because I just did and 😳\n\n`;
-      flagged.slice(0, 3).forEach(f => {
-        caption += `🔴 ${f.name} — ${f.reason}\n`;
-      });
+      flagged.slice(0,3).forEach(f => { caption += `🔴 ${f.name} — ${f.reason}\n`; });
       caption += `\nI've been using this not knowing what was in it. My crunchy bestie app just told me the truth.\n\nScan yours 👇\nrestandrootholistic.com\n\n@restandrootholistichealth\n#KnowWhatsInIt #RestAndRoot #PutItBack #ToxinFree`;
     } else if (verdict === 'CAUTION') {
       caption = `not the worst but not the best 👀 I scanned something and got a CAUTION\n\n`;
-      flagged.slice(0, 2).forEach(f => {
-        caption += `⚠️ ${f.name} — ${f.reason}\n`;
-      });
+      flagged.slice(0,2).forEach(f => { caption += `⚠️ ${f.name} — ${f.reason}\n`; });
       caption += `\nWorth knowing about. Getting closer to clean one scan at a time. 🌿\n\nrestandrootholistic.com\n\n@restandrootholistichealth\n#RestAndRoot #KnowWhatsInIt #ToxinFree`;
     } else {
       caption = `WAIT. I actually found a clean one 🎉\n\n✅ LOOKS CLEAN — no hormone disruptors, no fragrance loophole, no mystery chemicals.\n\nKeep this one. 🌿\n\nrestandrootholistic.com\n\n@restandrootholistichealth\n#CleanFind #RestAndRoot #KnowWhatsInIt #ToxinFree`;
     }
-
-    // Copy caption first — this is instant
     try { await navigator.clipboard.writeText(caption); } catch(e) {}
-
-    // Show instructions immediately — don't wait for canvas
     const toast = document.createElement('div');
-    toast.style.cssText = `
-      position:fixed;bottom:0;left:0;right:0;
-      background:#5C3D2E;color:white;
-      padding:20px 24px 32px;
-      font-size:14px;font-weight:500;
-      z-index:9999;text-align:center;
-      line-height:1.6;
-      border-radius:20px 20px 0 0;
-      box-shadow:0 -4px 20px rgba(0,0,0,0.3);
-    `;
-    toast.innerHTML = `
-      <div style="font-size:18px;font-weight:800;margin-bottom:8px;" id="fbToastTitle">📋 Caption copied! Saving image... 🌿</div>
-      <div style="color:rgba(250,246,240,0.8);font-size:13px;" id="fbToastBody">
-        Once saved, open Facebook → tap <strong style="color:white;">Photo/Video</strong> →<br>
-        select from your camera roll →<br>
-        paste your caption → post!
-      </div>
-      <button onclick="this.parentElement.remove()" style="
-        margin-top:16px;background:#7A9E7E;color:white;
-        border:none;border-radius:10px;padding:10px 28px;
-        font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
-      ">Got it! 🌿</button>
-    `;
+    toast.style.cssText = `position:fixed;bottom:0;left:0;right:0;background:#5C3D2E;color:white;padding:20px 24px 32px;font-size:14px;z-index:9999;text-align:center;line-height:1.6;border-radius:20px 20px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,0.3);`;
+    toast.innerHTML = `<div style="font-size:18px;font-weight:800;margin-bottom:8px;" id="fbToastTitle">📋 Caption copied! 🌿</div><div style="color:rgba(250,246,240,0.8);font-size:13px;">Open Facebook → tap Photo/Video →<br>select from your camera roll →<br>paste your caption → post!</div><button onclick="this.parentElement.remove()" style="margin-top:16px;background:#7A9E7E;color:white;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Got it! 🌿</button>`;
     document.body.appendChild(toast);
-
-    // Generate canvas image in background
-    try {
-      const verdictColor = verdict === 'PUT IT BACK' ? '#C0392B' : verdict === 'CAUTION' ? '#E67E22' : '#4A6E4E';
-      const canvas = document.createElement('canvas');
-      canvas.width = 1080;
-      canvas.height = 1080;
-      const ctx = canvas.getContext('2d');
-
-      // Safe rounded rect helper — no roundRect API needed
-      function roundRect(x, y, w, h, r) {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + w - r, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-        ctx.lineTo(x + w, y + h - r);
-        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        ctx.lineTo(x + r, y + h);
-        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
-        ctx.closePath();
-      }
-
-      // Background
-      ctx.fillStyle = '#FAF6F0';
-      ctx.fillRect(0, 0, 1080, 1080);
-
-      // Header
-      ctx.fillStyle = '#5C3D2E';
-      ctx.fillRect(0, 0, 1080, 130);
-      ctx.fillStyle = '#7A9E7E';
-      ctx.font = 'bold 20px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('REST & ROOT LABEL SCANNER', 540, 48);
-      ctx.fillStyle = '#C9A882';
-      ctx.font = '16px Arial, sans-serif';
-      ctx.fillText('Your crunchy bestie in your pocket', 540, 78);
-      ctx.fillStyle = 'rgba(250,246,240,0.4)';
-      ctx.font = '14px Arial, sans-serif';
-      ctx.fillText('restandrootholistic.com', 540, 110);
-
-      // Verdict banner
-      ctx.fillStyle = verdictColor;
-      roundRect(60, 150, 960, 110, 14);
-      ctx.fill();
-      const verdictEmoji = verdict === 'PUT IT BACK' ? 'PUT IT BACK' : verdict === 'CAUTION' ? 'CAUTION' : 'LOOKS CLEAN';
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 38px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(verdict, 540, 210);
-      const subTexts = {
-        'PUT IT BACK': 'Okay we need to talk about this one.',
-        'CAUTION': 'Not the worst, but worth knowing about.',
-        'LOOKS CLEAN': 'Yes!! This one actually passed.'
-      };
-      ctx.font = '16px Arial, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.fillText(subTexts[verdict] || '', 540, 240);
-
-      let yPos = 290;
-
-      if (verdict === 'LOOKS CLEAN') {
-        ctx.fillStyle = '#EEF4EE';
-        roundRect(60, yPos, 960, 200, 12);
-        ctx.fill();
-        ctx.fillStyle = '#4A6E4E';
-        ctx.font = 'bold 28px Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('You found a good one!', 540, yPos + 60);
-        ctx.fillStyle = '#5C7A60';
-        ctx.font = '18px Arial, sans-serif';
-        ctx.fillText('No hormone disruptors. No fragrance loophole.', 540, yPos + 100);
-        ctx.fillText('No mystery chemicals. Keep this one.', 540, yPos + 130);
-        yPos += 220;
-      } else {
-        flagged.slice(0, 4).forEach(f => {
-          const bgColor = f.risk === 'AVOID' ? '#FCEBEA' : '#FEF3E2';
-          const bColor = f.risk === 'AVOID' ? '#C0392B' : '#E67E22';
-          ctx.fillStyle = bgColor;
-          roundRect(60, yPos, 960, 108, 8);
-          ctx.fill();
-          ctx.fillStyle = bColor;
-          ctx.fillRect(60, yPos, 5, 108);
-          ctx.fillStyle = bColor;
-          roundRect(80, yPos + 14, f.risk === 'AVOID' ? 72 : 92, 26, 4);
-          ctx.fill();
-          ctx.fillStyle = 'white';
-          ctx.font = 'bold 12px Arial, sans-serif';
-          ctx.textAlign = 'left';
-          ctx.fillText(f.risk, 90, yPos + 32);
-          ctx.fillStyle = '#5C3D2E';
-          ctx.font = 'bold 20px Arial, sans-serif';
-          ctx.fillText(f.name, 80, yPos + 66);
-          ctx.fillStyle = '#8B6F5C';
-          ctx.font = '14px Arial, sans-serif';
-          const reason = f.reason && f.reason.length > 72 ? f.reason.substring(0, 69) + '...' : (f.reason || '');
-          ctx.fillText(reason, 80, yPos + 93);
-          yPos += 120;
-        });
-      }
-
-      // CTA
-      const ctaY = Math.max(yPos + 20, 860);
-      ctx.fillStyle = '#7A9E7E';
-      roundRect(60, ctaY, 960, 76, 38);
-      ctx.fill();
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 20px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Scan yours free -> restandrootholistic.com', 540, ctaY + 46);
-      ctx.fillStyle = '#8B6F5C';
-      ctx.font = '16px Arial, sans-serif';
-      ctx.fillText('@restandrootholistichealth  #KnowWhatsInIt  #RestAndRoot', 540, 1052);
-
-      // Download
-      const link = document.createElement('a');
-      link.download = verdict === 'LOOKS CLEAN' ? 'clean-find.png' : 'scan-result.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-
-      // Update toast to show success
-      const titleEl = document.getElementById('fbToastTitle');
-      if (titleEl) titleEl.textContent = '✅ Image saved + caption copied! 🌿';
-
-    } catch(e) {
-      console.log('Canvas error:', e);
-      const titleEl = document.getElementById('fbToastTitle');
-      if (titleEl) titleEl.textContent = '✅ Caption copied! 🌿';
-      const bodyEl = document.getElementById('fbToastBody');
-      if (bodyEl) bodyEl.innerHTML = 'Screenshot this scan result and post it to Facebook with the caption that was just copied to your clipboard! 🌿';
-    }
+    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 8000);
   }
 
   async function shareResult() {
     if (!lastScanData) return;
-
     const verdict = lastScanData.verdict;
     const flagged = (lastScanData.flags || []).filter(f => f.risk !== 'SAFE');
     const verdictColor = verdict === 'PUT IT BACK' ? '#C0392B' : verdict === 'CAUTION' ? '#E67E22' : '#4A6E4E';
-
     let shareText = '';
-
     if (verdict === 'PUT IT BACK') {
       shareText = `okay I need you to scan your products RIGHT NOW because I just did and 😳\n\n`;
-      flagged.slice(0, 3).forEach(f => {
-        shareText += `🔴 ${f.name} — ${f.reason}\n`;
-      });
-      shareText += `\nI've been using this not knowing what was in it. My crunchy bestie app just told me the truth.\n\nScan yours 👇\nrestandrootholistic.com\n\n@restandrootholistichealth\n#KnowWhatsInIt #RestAndRoot #PutItBack #ToxinFree #LabelScanner`;
+      flagged.slice(0,3).forEach(f => { shareText += `🔴 ${f.name} — ${f.reason}\n`; });
+      shareText += `\nI've been using this not knowing what was in it. My crunchy bestie app just told me the truth.\n\nrestandrootholistic.com\n\n@restandrootholistichealth\n#KnowWhatsInIt #RestAndRoot #PutItBack #ToxinFree`;
     } else if (verdict === 'CAUTION') {
       shareText = `not the worst but not the best 👀 I scanned something and got a CAUTION\n\n`;
-      flagged.slice(0, 2).forEach(f => {
-        shareText += `⚠️ ${f.name} — ${f.reason}\n`;
-      });
-      shareText += `\nWorth knowing about. Getting closer to clean one scan at a time. 🌿\n\nrestandrootholistic.com\n\n@restandrootholistichealth\n#RestAndRoot #KnowWhatsInIt #ToxinFree #CleanLiving`;
+      flagged.slice(0,2).forEach(f => { shareText += `⚠️ ${f.name} — ${f.reason}\n`; });
+      shareText += `\nrestandrootholistic.com\n\n@restandrootholistichealth\n#RestAndRoot #KnowWhatsInIt #ToxinFree`;
     } else {
-      shareText = `WAIT. I actually found a clean one 🎉\n\n✅ LOOKS CLEAN — no hormone disruptors, no fragrance loophole, no mystery chemicals.\n\n`;
-      if (lastScanData.summary) shareText += `${lastScanData.summary}\n\n`;
-      shareText += `Keep this one. 🌿\n\nrestandrootholistic.com\n\n@restandrootholistichealth\n#CleanFind #RestAndRoot #KnowWhatsInIt #ToxinFree #LooksClean`;
+      shareText = `WAIT. I actually found a clean one 🎉\n\n✅ LOOKS CLEAN\n\nrestandrootholistic.com\n\n@restandrootholistichealth\n#CleanFind #RestAndRoot #KnowWhatsInIt`;
     }
 
-    // Build branded canvas image
-    const canvas = document.createElement('canvas');
-    canvas.width = 1080;
-    canvas.height = 1080;
-    const ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = '#FAF6F0';
-    ctx.fillRect(0, 0, 1080, 1080);
-
-    ctx.fillStyle = '#5C3D2E';
-    ctx.fillRect(0, 0, 1080, 130);
-    ctx.fillStyle = '#7A9E7E';
-    ctx.font = 'bold 20px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('REST & ROOT LABEL SCANNER 🌿', 540, 48);
-    ctx.fillStyle = '#C9A882';
-    ctx.font = '16px Arial, sans-serif';
-    ctx.fillText('Your crunchy bestie in your pocket', 540, 78);
-    ctx.fillStyle = 'rgba(250,246,240,0.4)';
-    ctx.font = '14px Arial, sans-serif';
-    ctx.fillText('restandrootholistic.com', 540, 110);
-
-    ctx.fillStyle = verdictColor;
-    ctx.beginPath();
-    ctx.roundRect(60, 150, 960, 110, 14);
-    ctx.fill();
-
-    const verdictEmoji = verdict === 'PUT IT BACK' ? '⛔' : verdict === 'CAUTION' ? '⚠️' : '✅';
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 38px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`${verdictEmoji} ${verdict}`, 540, 210);
-
-    const subTexts = { 'PUT IT BACK': 'Okay we need to talk about this one.', 'CAUTION': 'Not the worst, but worth knowing about.', 'LOOKS CLEAN': 'Yes!! This one actually passed. 🎉' };
-    ctx.font = '16px Arial, sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.fillText(subTexts[verdict] || '', 540, 240);
-
-    let yPos = 290;
-
-    if (verdict === 'LOOKS CLEAN') {
-      ctx.fillStyle = '#EEF4EE';
+    function safeRoundRect(ctx, x, y, w, h, r) {
       ctx.beginPath();
-      ctx.roundRect(60, yPos, 960, 200, 12);
-      ctx.fill();
-      ctx.fillStyle = '#4A6E4E';
-      ctx.font = 'bold 28px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('🎉 You found a good one!', 540, yPos + 60);
-      ctx.fillStyle = '#5C7A60';
-      ctx.font = '18px Arial, sans-serif';
-      ctx.fillText('No hormone disruptors. No fragrance loophole.', 540, yPos + 100);
-      ctx.fillText('No mystery chemicals. Keep this one. 🌿', 540, yPos + 130);
-      ctx.fillStyle = '#8B6F5C';
-      ctx.font = 'italic 15px Arial, sans-serif';
-      ctx.fillText("Every clean find is a win. You're doing the work.", 540, yPos + 170);
-      yPos += 220;
-    } else {
-      flagged.slice(0, 4).forEach(f => {
-        const bgColor = f.risk === 'AVOID' ? '#FCEBEA' : '#FEF3E2';
-        const bColor = f.risk === 'AVOID' ? '#C0392B' : '#E67E22';
-        ctx.fillStyle = bgColor;
-        ctx.beginPath();
-        ctx.roundRect(60, yPos, 960, 108, 8);
-        ctx.fill();
-        ctx.fillStyle = bColor;
-        ctx.fillRect(60, yPos, 5, 108);
-        ctx.fillStyle = bColor;
-        ctx.beginPath();
-        ctx.roundRect(80, yPos + 14, f.risk === 'AVOID' ? 72 : 92, 26, 4);
-        ctx.fill();
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 12px Arial, sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(f.risk, 90, yPos + 32);
-        ctx.fillStyle = '#5C3D2E';
-        ctx.font = 'bold 20px Arial, sans-serif';
-        ctx.fillText(f.name, 80, yPos + 66);
-        ctx.fillStyle = '#8B6F5C';
-        ctx.font = '14px Arial, sans-serif';
-        const reason = f.reason && f.reason.length > 72 ? f.reason.substring(0, 69) + '...' : (f.reason || '');
-        ctx.fillText(reason, 80, yPos + 93);
-        yPos += 120;
-      });
+      ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+      ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+      ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+      ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
     }
 
-    const ctaY = Math.max(yPos + 20, 860);
-    ctx.fillStyle = '#7A9E7E';
-    ctx.beginPath();
-    ctx.roundRect(60, ctaY, 960, 76, 38);
-    ctx.fill();
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 20px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Scan yours free → restandrootholistic.com', 540, ctaY + 46);
-    ctx.fillStyle = '#8B6F5C';
-    ctx.font = '16px Arial, sans-serif';
-    ctx.fillText('@restandrootholistichealth  •  #KnowWhatsInIt  •  #RestAndRoot', 540, 1052);
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080; canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#FAF6F0'; ctx.fillRect(0,0,1080,1080);
+    ctx.fillStyle = '#5C3D2E'; ctx.fillRect(0,0,1080,130);
+    ctx.fillStyle = '#7A9E7E'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center';
+    ctx.fillText('REST & ROOT LABEL SCANNER', 540, 48);
+    ctx.fillStyle = '#C9A882'; ctx.font = '16px Arial';
+    ctx.fillText('Your crunchy bestie in your pocket', 540, 78);
+    ctx.fillStyle = verdictColor; safeRoundRect(ctx,60,150,960,110,14); ctx.fill();
+    ctx.fillStyle = 'white'; ctx.font = 'bold 38px Arial';
+    ctx.fillText(verdict, 540, 210);
+    let yPos = 290;
+    flagged.slice(0,4).forEach(f => {
+      ctx.fillStyle = f.risk === 'AVOID' ? '#FCEBEA' : '#FEF3E2'; safeRoundRect(ctx,60,yPos,960,108,8); ctx.fill();
+      ctx.fillStyle = f.risk === 'AVOID' ? '#C0392B' : '#E67E22'; ctx.fillRect(60,yPos,5,108);
+      ctx.fillStyle = '#5C3D2E'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'left';
+      ctx.fillText(f.name, 80, yPos+60);
+      ctx.fillStyle = '#8B6F5C'; ctx.font = '14px Arial';
+      ctx.fillText(f.reason ? f.reason.substring(0,70) : '', 80, yPos+86);
+      yPos += 120;
+    });
+    const ctaY = Math.max(yPos+20,860);
+    ctx.fillStyle = '#7A9E7E'; safeRoundRect(ctx,60,ctaY,960,76,38); ctx.fill();
+    ctx.fillStyle = 'white'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center';
+    ctx.fillText('Scan yours free → restandrootholistic.com', 540, ctaY+46);
 
     try {
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
@@ -1835,22 +670,15 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
         return;
       }
     } catch(e) {}
-
     try {
       const link = document.createElement('a');
-      link.download = verdict === 'LOOKS CLEAN' ? 'clean-find.png' : 'scan-result.png';
+      link.download = 'scan-result.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
-      const toast = document.createElement('div');
-      toast.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#4A6E4E;color:white;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;z-index:9999;text-align:center;max-width:300px;`;
-      toast.textContent = verdict === 'LOOKS CLEAN' ? '🎉 Clean find saved! Share it everywhere 🌿' : '😳 Scan saved! Share it so your people know 🌿';
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
     } catch(e) {
       alert('Screenshot this and share it! Tag @restandrootholistichealth 🌿');
     }
   }
 </script>
-
 </body>
 </html>
