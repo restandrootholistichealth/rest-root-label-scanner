@@ -861,6 +861,11 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
   🌿 You have 1 free scan — make it count!
 </div>
 
+<!-- Wellness profile indicator -->
+<div id="profileBanner" style="display:none;background:#EEF4EE;padding:8px 16px;text-align:center;font-size:12px;color:#4A6E4E;font-weight:600;border-bottom:1px solid rgba(122,158,126,0.2);">
+  🌿 Scanning personalized to your wellness profile · <a href="/" style="color:#7A9E7E;text-decoration:underline;">Update</a>
+</div>
+
 <div class="header">
   <h1>Rest & Root Label Scanner</h1>
   <p>Certified Naturopath & HTMA Practitioner</p>
@@ -906,8 +911,8 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
       See My Options →
     </button>
 
-    <button class="paywall-no-thanks" onclick="dismissPaywall()">
-      No thanks, I'll stick to one scan
+    <button class="paywall-no-thanks" onclick="noThanksPaywall()">
+      No thanks, I only needed one scan
     </button>
   </div>
 </div>
@@ -991,6 +996,12 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     } catch(e) {}
   }
 
+  // Show wellness profile banner if profile exists
+  const savedProfile = JSON.parse(localStorage.getItem('rr_wellness_profile') || '[]');
+  if (savedProfile.length > 0) {
+    document.getElementById('profileBanner').style.display = 'block';
+  }
+
   initScanner();
 
   // Paywall plan selection
@@ -1001,16 +1012,48 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
   }
 
   // Show paywall after free scan
-  function showPaywall() {
+  function noThanksPaywall() {
+    // Show a holding screen instead of letting them scan again
+    const overlay = document.getElementById('paywallOverlay');
+    const sheet = overlay.querySelector('.paywall-sheet');
+    sheet.innerHTML = `
+      <div style="text-align:center;padding:20px 0;">
+        <div style="font-size:48px;margin-bottom:16px;">🌿</div>
+        <div style="font-family:Georgia,serif;font-size:22px;color:#5C3D2E;margin-bottom:12px;">
+          Come back anytime.
+        </div>
+        <div style="font-size:14px;color:#8B6F5C;line-height:1.7;margin-bottom:24px;">
+          Your free scan result is saved above.<br>
+          When you're ready to keep scanning,<br>
+          we'll be here. 🌿
+        </div>
+        <button onclick="startPaywallPurchase()" style="
+          width:100%;padding:16px;background:#7A9E7E;color:white;
+          border:none;border-radius:12px;font-size:16px;font-weight:700;
+          cursor:pointer;font-family:inherit;margin-bottom:12px;">
+          Actually, I'm ready → 
+        </button>
+        <div style="font-size:11px;color:#8B6F5C;">
+          7-day free trial · Cancel anytime
+        </div>
+      </div>
+    `;
+  }
     const overlay = document.getElementById('paywallOverlay');
     overlay.classList.add('visible');
-
-    // Track paywall view
+    // Prevent dismissal by tapping outside for non-subscribers
+    overlay.onclick = function(e) {
+      if (e.target === overlay && isSubscriber) {
+        dismissPaywall();
+      }
+      // Do nothing if not a subscriber — hard gate
+    };
     try { fbq('track', 'ViewContent', { content_name: 'paywall_post_scan' }); } catch(e) {}
   }
 
-  // Dismiss paywall
   function dismissPaywall() {
+    // Only allow dismissal if subscriber
+    if (!isSubscriber) return;
     const overlay = document.getElementById('paywallOverlay');
     overlay.classList.remove('visible');
   }
@@ -1122,6 +1165,18 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     const btn = document.getElementById('scanBtn');
     const results = document.getElementById('results');
 
+    // Check if free scan already used and not a subscriber
+    if (!isSubscriber) {
+      const freeScanUsed = localStorage.getItem('rr_free_scan_used') === 'true';
+      const freeScanAvailable = localStorage.getItem('rr_free_scan_available') === 'true';
+
+      if (freeScanUsed || !freeScanAvailable) {
+        // They've used their free scan — show paywall instead
+        showPaywall();
+        return;
+      }
+    }
+
     if (currentMode === 'photo' && !photoData) {
       results.innerHTML = '<div class="summary-card">Please take or upload a photo first!</div>';
       return;
@@ -1151,9 +1206,11 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     }, 1800);
 
     try {
+      const wellnessProfile = JSON.parse(localStorage.getItem('rr_wellness_profile') || '[]');
+
       const body = currentMode === 'photo'
-        ? { image: { data: photoData, mediaType: photoMediaType } }
-        : { ingredients: document.getElementById('ingredients').value.trim() };
+        ? { image: { data: photoData, mediaType: photoMediaType }, wellness_profile: wellnessProfile }
+        : { ingredients: document.getElementById('ingredients').value.trim(), wellness_profile: wellnessProfile };
 
       // CALL 1 — Fast scan (verdict + flags)
       const response = await fetch('/api/scan', {
