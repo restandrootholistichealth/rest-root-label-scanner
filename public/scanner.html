@@ -1130,43 +1130,85 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
   function handlePhoto(input) {
     const file = input.files[0];
-    if (!file) return;
+    console.log('handlePhoto called, file:', file ? file.name : 'none');
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
+
+    // Show loading state immediately so user knows it's working
+    const previewContainer = document.getElementById('previewContainer');
+    if (previewContainer) {
+      previewContainer.style.display = 'block';
+      previewContainer.innerHTML = '<p style="text-align:center;color:#7A9E7E;padding:20px;font-weight:600;">📷 Loading photo...</p>';
+    }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxSize = 1200;
-        let w = img.width, h = img.height;
-        if (w > maxSize || h > maxSize) {
-          if (w > h) { h = (h / w) * maxSize; w = maxSize; }
-          else { w = (w / h) * maxSize; h = maxSize; }
-        }
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const compressed = canvas.toDataURL('image/jpeg', 0.8);
-        photoData = compressed.split(',')[1];
-        photoMediaType = 'image/jpeg';
 
-        // Show preview
-        const preview = document.getElementById('preview');
-        const previewContainer = document.getElementById('previewContainer');
-        preview.src = compressed;
-        preview.style.display = 'block';
-        preview.style.width = '100%';
-        preview.style.maxHeight = '250px';
-        preview.style.objectFit = 'contain';
-        preview.style.borderRadius = '8px';
-        if (previewContainer) previewContainer.style.display = 'block';
-
-        // Scroll scan button into view
-        const scanBtn = document.getElementById('scanBtn');
-        if (scanBtn) scanBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      };
-      img.src = e.target.result;
+    reader.onerror = (err) => {
+      console.log('FileReader error:', err);
+      if (previewContainer) {
+        previewContainer.innerHTML = '<p style="text-align:center;color:#C0392B;padding:20px;">Could not load photo. Please try again.</p>';
+      }
     };
+
+    reader.onload = (e) => {
+      console.log('FileReader onload fired, data length:', e.target.result ? e.target.result.length : 0);
+
+      // Try direct base64 approach first — skip canvas compression
+      try {
+        const dataUrl = e.target.result;
+        const base64 = dataUrl.split(',')[1];
+        const mimeMatch = dataUrl.match(/data:([^;]+);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+
+        photoData = base64;
+        photoMediaType = mime;
+
+        console.log('photoData set, length:', photoData.length, 'mime:', photoMediaType);
+
+        // Show preview directly without canvas compression
+        if (previewContainer) {
+          previewContainer.style.display = 'block';
+          previewContainer.innerHTML = `
+            <img src="${dataUrl}" style="width:100%;max-height:250px;object-fit:contain;border-radius:8px;display:block;" alt="Label preview">
+            <p style="font-size:12px;color:#7A9E7E;text-align:center;margin-top:6px;font-weight:600;">✅ Photo loaded — tap Scan below</p>
+          `;
+        }
+
+        // Try canvas compression in background to reduce file size
+        try {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxSize = 1200;
+            let w = img.width, h = img.height;
+            if (w > maxSize || h > maxSize) {
+              if (w > h) { h = (h / w) * maxSize; w = maxSize; }
+              else { w = (w / h) * maxSize; h = maxSize; }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const compressed = canvas.toDataURL('image/jpeg', 0.8);
+            photoData = compressed.split(',')[1];
+            photoMediaType = 'image/jpeg';
+            console.log('Canvas compression done, new size:', photoData.length);
+          };
+          img.src = dataUrl;
+        } catch(canvasErr) {
+          console.log('Canvas compression failed, using original:', canvasErr);
+          // photoData already set above — still works
+        }
+
+      } catch(err) {
+        console.log('Error processing photo:', err);
+        if (previewContainer) {
+          previewContainer.innerHTML = '<p style="text-align:center;color:#C0392B;padding:20px;">Error loading photo. Try the text mode instead.</p>';
+        }
+      }
+    };
+
     reader.readAsDataURL(file);
   }
 
