@@ -1132,30 +1132,45 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     const file = input.files[0];
     if (!file) return;
 
+    // Use object URL — most reliable across all webviews
+    const objectUrl = URL.createObjectURL(file);
+    const container = document.getElementById('previewContainer');
+    const img = document.getElementById('previewImg');
+    const scanBtn = document.getElementById('scanBtn');
+
+    // Show preview immediately
+    if (img) {
+      img.src = objectUrl;
+      img.style.display = 'block';
+    }
+    if (container) {
+      container.style.display = 'block';
+    }
+
+    // Read as base64 for API in background
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target.result;
-
-      // Set photoData immediately
       photoData = dataUrl.split(',')[1];
       photoMediaType = file.type || 'image/jpeg';
-
-      // Show preview — simplest possible approach
-      const container = document.getElementById('previewContainer');
-      const img = document.getElementById('previewImg');
-      const scanBtn = document.getElementById('scanBtn');
-
-      if (img) {
-        img.src = dataUrl;
-        img.style.display = 'block';
-      }
-      if (container) {
-        container.style.display = 'block';
-      }
       if (scanBtn) {
-        scanBtn.style.background = '#5C7A60';
         scanBtn.textContent = '🔍 Scan This Label';
       }
+    };
+    reader.onerror = () => {
+      // Fallback — convert object URL to base64 via img element
+      const tempImg = new Image();
+      tempImg.crossOrigin = 'anonymous';
+      tempImg.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = tempImg.naturalWidth;
+        canvas.height = tempImg.naturalHeight;
+        canvas.getContext('2d').drawImage(tempImg, 0, 0);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        photoData = dataUrl.split(',')[1];
+        photoMediaType = 'image/jpeg';
+      };
+      tempImg.src = objectUrl;
     };
     reader.readAsDataURL(file);
   }
