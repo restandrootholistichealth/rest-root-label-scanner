@@ -932,16 +932,22 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
   <!-- PHOTO MODE -->
   <div id="photo-mode" class="input-section">
-    <div class="upload-area" id="uploadArea" onclick="document.getElementById('photoInput').click()">
-      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)" style="position:absolute;opacity:0;width:0;height:0;">
-      <div class="upload-icon">📷</div>
-      <h3>Take a photo or upload a label</h3>
-      <p>Point your camera at any ingredient list</p>
-    </div>
     <img id="preview" class="preview-img" alt="Label preview">
-    <button class="mode-tab" style="margin-top:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:10px 20px;border-radius:8px;width:100%;font-size:14px;" onclick="document.getElementById('photoInput').click()">
-      📷 Take Photo / Choose from Library
-    </button>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <label style="flex:1;text-align:center;background:#7A9E7E;color:white;padding:14px 10px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:block;">
+        📷 Take Photo
+        <input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this)" style="display:none;">
+      </label>
+      <label style="flex:1;text-align:center;background:white;color:#5C3D2E;border:2px solid #5C3D2E;padding:14px 10px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:block;">
+        🖼️ Choose Photo
+        <input type="file" accept="image/*" onchange="handlePhoto(this)" style="display:none;">
+      </label>
+    </div>
+    <div class="upload-area" id="uploadArea" style="padding:20px;margin-top:0;">
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+      <div class="upload-icon">📷</div>
+      <p style="font-size:13px;color:#8a7a6a;">Or tap here to take a photo</p>
+    </div>
   </div>
 
   <!-- TEXT MODE -->
