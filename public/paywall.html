@@ -686,13 +686,20 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 <div class="hero">
   <span class="leaf-decoration">🌿</span>
   <div class="brand-name">Rest & Root Holistic Health</div>
-  <h1 class="hero-headline">Know exactly what's in <em>every product</em> you buy.</h1>
+  <h1 class="hero-headline" id="paywallHeadline">Know exactly what's in <em>every product</em> you buy.</h1>
   <ul class="hero-bullets">
     <li><span>🔍</span><span>Scan any product label in seconds</span></li>
     <li><span>🚫</span><span>Instantly flags hormone disruptors, mineral depleters & nervous system stressors</span></li>
     <li><span>💚</span><span>Built by a certified naturopath — not a generic algorithm</span></li>
   </ul>
 </div>
+<script>
+  // Show contextual headline if coming from free scan
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('from') === 'scan') {
+    document.getElementById('paywallHeadline').innerHTML = 'That was your free scan. <em>Want to keep going?</em>';
+  }
+</script>
 
 <!-- COST OF INACTION -->
 <div class="cost-section">

@@ -344,10 +344,10 @@ fbq('track', 'PageView');
   }
 
   function showPaywall() {
-    const overlay = document.getElementById('paywallOverlay');
-    overlay.classList.add('visible');
-    // Don't add onclick to overlay — it intercepts button taps on mobile
+    // Redirect to standalone paywall — proven to work in Twinr
+    // Fixed overlay blocks inapppurchase:// in webview
     try { fbq('track', 'ViewContent', { content_name: 'paywall_post_scan' }); } catch(e) {}
+    window.location.href = '/paywall?from=scan';
   }
 
   function dismissPaywall() {
