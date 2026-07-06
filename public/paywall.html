@@ -868,7 +868,9 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
   function goToScanner() {
     localStorage.setItem('rr_unlocked', 'true');
-    window.location.href = 'https://scanner.restandrootholistic.com/scanner';
+    localStorage.removeItem('rr_free_scan_available');
+    localStorage.removeItem('rr_free_scan_used');
+    window.location.href = '/scanner';
   }
 
   function hideOverlay() {
@@ -878,6 +880,16 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 
   async function checkSubscription() {
     const urlParams = new URLSearchParams(window.location.search);
+
+    // Coming from free scan — clear any stale unlock state and show paywall
+    if (urlParams.get('from') === 'scan') {
+      localStorage.removeItem('rr_unlocked');
+      localStorage.removeItem('rr_free_scan_available');
+      localStorage.setItem('rr_free_scan_used', 'true');
+      hideOverlay();
+      return;
+    }
+
     if (urlParams.get('purchase') === 'success' || urlParams.get('unlocked') === 'true') {
       goToScanner(); return;
     }
