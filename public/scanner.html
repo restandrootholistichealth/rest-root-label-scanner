@@ -152,7 +152,8 @@ fbq('track', 'PageView');
   .paywall-headline { font-family: Georgia, serif; font-size: 26px; font-weight: normal; color: var(--brown); text-align: center; margin-bottom: 8px; line-height: 1.25; }
   .paywall-sub { font-size: 14px; color: var(--warm-brown); text-align: center; margin-bottom: 28px; line-height: 1.6; }
   .paywall-plans { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
-  .paywall-plan { border-radius: 14px; padding: 16px 18px; border: 2px solid transparent; cursor: pointer; position: relative; transition: all 0.2s; background: white; box-shadow: 0 2px 10px rgba(92,61,46,0.06); }
+  .paywall-plan { width:100%; text-align:left; border-radius: 14px; padding: 16px 18px; border: 2px solid rgba(92,61,46,0.1); cursor: pointer; position: relative; transition: all 0.2s; background: white; box-shadow: 0 2px 10px rgba(92,61,46,0.06); font-family:inherit; }
+  .paywall-plan:active { transform: scale(0.98); }
   .paywall-plan.featured { border-color: var(--gold); }
   .paywall-plan.selected { border-color: var(--sage); background: var(--light-sage); }
   .paywall-plan-badge { position: absolute; top: -9px; right: 14px; background: var(--gold); color: white; font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 10px; border-radius: 100px; }
@@ -187,25 +188,25 @@ fbq('track', 'PageView');
     <div class="paywall-headline">Want to keep scanning?</div>
     <div class="paywall-sub">Join the people who actually know what's in their products.</div>
     <div class="paywall-plans">
-      <div class="paywall-plan featured selected" id="pw-annual" onclick="selectPaywallPlan('annual')">
+      <button class="paywall-plan featured selected" id="pw-annual" onclick="selectPaywallPlan('annual')" type="button">
         <div class="paywall-plan-badge">Best Value</div>
         <div class="paywall-plan-header">
           <div class="paywall-plan-name">Annual Access</div>
           <div><div class="paywall-plan-price">$120</div><div class="paywall-plan-period">/year</div></div>
         </div>
         <div class="paywall-plan-detail">Just $10/month — less than a coffee a month ☕</div>
-      </div>
-      <div class="paywall-plan" id="pw-monthly" onclick="selectPaywallPlan('monthly')">
+      </button>
+      <button class="paywall-plan" id="pw-monthly" onclick="selectPaywallPlan('monthly')" type="button">
         <div class="paywall-plan-header">
           <div class="paywall-plan-name">Monthly Access</div>
           <div><div class="paywall-plan-price">$12.99</div><div class="paywall-plan-period">/month</div></div>
         </div>
         <div class="paywall-plan-detail secondary">Flexible — cancel anytime</div>
-      </div>
+      </button>
     </div>
     <div class="paywall-trust">7-day free trial included · No charge today · Cancel anytime</div>
-    <button class="paywall-cta" onclick="startPaywallPurchase()">See My Options →</button>
-    <button class="paywall-no-thanks" onclick="noThanksPaywall()">No thanks, I only needed one scan</button>
+    <button class="paywall-cta" id="paywallCtaBtn" type="button" onclick="startPaywallPurchase()">Start My Free Trial →</button>
+    <button class="paywall-no-thanks" type="button" onclick="noThanksPaywall()">No thanks, I only needed one scan</button>
   </div>
 </div>
 
@@ -336,8 +337,10 @@ fbq('track', 'PageView');
   // Paywall functions
   function selectPaywallPlan(plan) {
     paywallPlan = plan;
-    document.getElementById('pw-annual').classList.toggle('selected', plan === 'annual');
-    document.getElementById('pw-monthly').classList.toggle('selected', plan === 'monthly');
+    const annual = document.getElementById('pw-annual');
+    const monthly = document.getElementById('pw-monthly');
+    if (annual) { annual.classList.toggle('selected', plan === 'annual'); annual.classList.toggle('featured', plan === 'annual'); }
+    if (monthly) { monthly.classList.toggle('selected', plan === 'monthly'); }
   }
 
   function showPaywall() {
@@ -361,14 +364,53 @@ fbq('track', 'PageView');
         <div style="font-size:14px;color:#8B6F5C;line-height:1.7;margin-bottom:24px;">
           Your free scan result is saved above.<br>When you're ready to keep scanning,<br>we'll be here. 🌿
         </div>
-        <button id="readyBtn" style="width:100%;padding:16px;background:#7A9E7E;color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px;">
+        <button id="readyBtn" type="button" style="width:100%;padding:16px;background:#7A9E7E;color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px;">
           Actually, I'm ready →
         </button>
         <div style="font-size:11px;color:#8B6F5C;">7-day free trial · Cancel anytime</div>
       </div>
     `;
-    // Re-attach click handler after innerHTML replacement
-    document.getElementById('readyBtn').addEventListener('click', startPaywallPurchase);
+    // When they tap "Actually I'm ready" — restore the full paywall
+    document.getElementById('readyBtn').addEventListener('click', function() {
+      restorePaywall();
+    });
+  }
+
+  function restorePaywall() {
+    const sheet = document.getElementById('paywallSheet');
+    sheet.innerHTML = `
+      <div class="paywall-handle"></div>
+      <div class="paywall-headline">Want to keep scanning?</div>
+      <div class="paywall-sub">Join the people who actually know what's in their products.</div>
+      <div class="paywall-plans">
+        <button class="paywall-plan featured selected" id="pw-annual" type="button">
+          <div class="paywall-plan-badge">Best Value</div>
+          <div class="paywall-plan-header">
+            <div class="paywall-plan-name">Annual Access</div>
+            <div><div class="paywall-plan-price">$120</div><div class="paywall-plan-period">/year</div></div>
+          </div>
+          <div class="paywall-plan-detail">Just $10/month — less than a coffee a month ☕</div>
+        </button>
+        <button class="paywall-plan" id="pw-monthly" type="button">
+          <div class="paywall-plan-header">
+            <div class="paywall-plan-name">Monthly Access</div>
+            <div><div class="paywall-plan-price">$12.99</div><div class="paywall-plan-period">/month</div></div>
+          </div>
+          <div class="paywall-plan-detail secondary">Flexible — cancel anytime</div>
+        </button>
+      </div>
+      <div class="paywall-trust">7-day free trial included · No charge today · Cancel anytime</div>
+      <button class="paywall-cta" id="paywallCtaBtn" type="button">Start My Free Trial →</button>
+      <button class="paywall-no-thanks" type="button">No thanks, I'll pass for now</button>
+    `;
+    // Re-attach all event listeners
+    paywallPlan = 'annual';
+    document.getElementById('pw-annual').addEventListener('click', () => selectPaywallPlan('annual'));
+    document.getElementById('pw-monthly').addEventListener('click', () => selectPaywallPlan('monthly'));
+    document.getElementById('paywallCtaBtn').addEventListener('click', startPaywallPurchase);
+    document.querySelector('.paywall-no-thanks').addEventListener('click', () => {
+      document.getElementById('paywallOverlay').classList.remove('visible');
+    });
   }
 
   function startPaywallPurchase() {
