@@ -353,19 +353,22 @@ fbq('track', 'PageView');
   }
 
   function noThanksPaywall() {
-    document.getElementById('paywallSheet').innerHTML = `
+    const sheet = document.getElementById('paywallSheet');
+    sheet.innerHTML = `
       <div style="text-align:center;padding:20px 0;">
         <div style="font-size:48px;margin-bottom:16px;">🌿</div>
         <div style="font-family:Georgia,serif;font-size:22px;color:#5C3D2E;margin-bottom:12px;">Come back anytime.</div>
         <div style="font-size:14px;color:#8B6F5C;line-height:1.7;margin-bottom:24px;">
           Your free scan result is saved above.<br>When you're ready to keep scanning,<br>we'll be here. 🌿
         </div>
-        <button onclick="startPaywallPurchase()" style="width:100%;padding:16px;background:#7A9E7E;color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px;">
+        <button id="readyBtn" style="width:100%;padding:16px;background:#7A9E7E;color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px;">
           Actually, I'm ready →
         </button>
         <div style="font-size:11px;color:#8B6F5C;">7-day free trial · Cancel anytime</div>
       </div>
     `;
+    // Re-attach click handler after innerHTML replacement
+    document.getElementById('readyBtn').addEventListener('click', startPaywallPurchase);
   }
 
   function startPaywallPurchase() {
@@ -463,7 +466,12 @@ fbq('track', 'PageView');
         localStorage.setItem('rr_free_scan_used', 'true');
         localStorage.removeItem('rr_free_scan_available');
         document.getElementById('freeScanBanner').style.display = 'none';
-        setTimeout(() => showPaywall(), 2000);
+
+        // Scroll to results first so they can see them
+        document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // Wait longer — let them actually read the result before paywall
+        setTimeout(() => showPaywall(), 4500);
       }
 
       const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
