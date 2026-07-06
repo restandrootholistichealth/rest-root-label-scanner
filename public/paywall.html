@@ -870,6 +870,7 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     localStorage.setItem('rr_unlocked', 'true');
     localStorage.removeItem('rr_free_scan_available');
     localStorage.removeItem('rr_free_scan_used');
+    // Redirect to scanner WITHOUT ?from=scan so it doesn't loop back to paywall
     window.location.href = '/scanner';
   }
 
@@ -881,29 +882,37 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
   async function checkSubscription() {
     const urlParams = new URLSearchParams(window.location.search);
 
-    // Coming from free scan — clear any stale unlock state and show paywall
+    // Coming from free scan — hide overlay immediately and stop
     if (urlParams.get('from') === 'scan') {
+      hideOverlay(); // Do this FIRST before anything async
       localStorage.removeItem('rr_unlocked');
       localStorage.removeItem('rr_free_scan_available');
       localStorage.setItem('rr_free_scan_used', 'true');
-      hideOverlay();
       return;
     }
 
+    // Check URL params first (synchronous)
     if (urlParams.get('purchase') === 'success' || urlParams.get('unlocked') === 'true') {
       goToScanner(); return;
     }
     if (localStorage.getItem('rr_unlocked') === 'true') {
       goToScanner(); return;
     }
+
+    // Now do async Twinr check
     try {
       const purchases = await twinr_get_iap_purchases();
       if (Array.isArray(purchases) && purchases.length > 0) {
         goToScanner(); return;
       }
     } catch(e) {}
+
+    // No subscription found — show paywall
     hideOverlay();
   }
+
+  // Safety net — always hide overlay after 3 seconds no matter what
+  setTimeout(hideOverlay, 3000);
 
   checkSubscription();
 
@@ -935,8 +944,12 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     btn.innerHTML = '<span class="loading"></span>Loading...';
     btn.disabled = true;
     const productId = PRODUCTS[selectedPlan];
+
+    // Fire the purchase
     window.location.href = `inapppurchase://twinr.dev?product_id=${productId}`;
     if (window.TwinrBridge) window.TwinrBridge.purchase(productId);
+
+    // Reset button after 5 seconds in case nothing happens
     setTimeout(() => {
       btn.innerHTML = 'Start Scanning Free →';
       btn.disabled = false;
