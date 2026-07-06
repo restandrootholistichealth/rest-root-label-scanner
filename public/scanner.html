@@ -183,7 +183,7 @@ fbq('track', 'PageView');
 </div>
 
 <div class="paywall-overlay" id="paywallOverlay">
-  <div class="paywall-sheet" id="paywallSheet">
+  <div class="paywall-sheet" id="paywallSheet" onclick="event.stopPropagation();">
     <div class="paywall-handle"></div>
     <div class="paywall-headline">Want to keep scanning?</div>
     <div class="paywall-sub">Join the people who actually know what's in their products.</div>
@@ -346,7 +346,7 @@ fbq('track', 'PageView');
   function showPaywall() {
     const overlay = document.getElementById('paywallOverlay');
     overlay.classList.add('visible');
-    overlay.onclick = function(e) { if (e.target === overlay && isSubscriber) dismissPaywall(); };
+    // Don't add onclick to overlay — it intercepts button taps on mobile
     try { fbq('track', 'ViewContent', { content_name: 'paywall_post_scan' }); } catch(e) {}
   }
 
@@ -415,9 +415,11 @@ fbq('track', 'PageView');
 
   function startPaywallPurchase() {
     const productId = PRODUCTS[paywallPlan];
+    try { fbq('track', 'InitiateCheckout', { content_name: paywallPlan + '_trial' }); } catch(e) {}
+
+    // This is the exact method that works in the live Twinr app
     window.location.href = `inapppurchase://twinr.dev?product_id=${productId}`;
     if (window.TwinrBridge) window.TwinrBridge.purchase(productId);
-    try { fbq('track', 'InitiateCheckout', { content_name: paywallPlan + '_trial' }); } catch(e) {}
   }
 
   window.addEventListener('message', (event) => {
