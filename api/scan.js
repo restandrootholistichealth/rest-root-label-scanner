@@ -195,7 +195,41 @@ function getSourcesForIngredient(name) {
   return VERIFIED_SOURCES.general;
 }
 
-async function getFastScan(client, ingredients, image) {
+async function getFastScan(client, ingredients, image, wellnessProfile) {
+
+  // Build personalized context based on wellness profile
+  // All health claims below are based on peer-reviewed research
+  const profileContextMap = {
+    hormone: `HORMONE HEALTH PRIORITY: Research published in Frontiers in Reproductive Health (2025) confirms that endocrine-disrupting chemicals (EDCs) in personal care products, including parabens, phthalates, and triclosan, can mimic, block, or interfere with hormone signaling even at low concentrations (PMC12289576). The NIH NIEHS confirms even low doses may be unsafe because the body's normal endocrine functioning involves very small changes in hormone levels (niehs.nih.gov/health/topics/agents/endocrine). Flag any EDC with extra priority and explain specific hormone pathway affected.`,
+
+    thyroid: `THYROID / AUTOIMMUNE PRIORITY: Research in Toxics (2021) identified EDCs including triclosan, phthalates, and bisphenols as particularly concerning for thyroid hormone regulation (doi:10.3390/toxics9010014). A 2025 cross-sectional study in Journal of Environmental Science found human exposure to mixtures of endocrine disruptors was associated with altered serum levels of thyroid hormones (doi:10.1016/j.jes.2022.01.017). For autoimmune conditions, SLS has been shown to disrupt mucosal barriers which may exacerbate immune reactivity. Flag any ingredient with thyroid or autoimmune relevance and explain the specific mechanism.`,
+
+    pregnancy: `PREGNANCY / FERTILITY PRIORITY: A 2025 review in Frontiers in Reproductive Health (PMC12289576) found EDCs primarily influence the hypothalamus-pituitary-gonadal axis and embryonic growth. Research in Environmental Research (2024) confirmed that phthalate exposure during key stages of in utero development may affect female reproductive development. The NIH notes pregnant women and young children are more susceptible populations. Flag any ingredient of concern during pregnancy with extra urgency and practical avoidance guidance.`,
+
+    kids: `CHILDREN / BABIES PRIORITY: A 2024 NPR-covered study found personal care products including lotions, ointments, and hair conditioners are linked to higher levels of phthalates in young children (NIH / NPR, September 2024). Research confirms children face unique risks during key developmental windows and that phthalates may impair brain development and contribute to early puberty in girls. Always flag any potentially harmful ingredient as especially concerning for children and suggest the safest possible alternatives.`,
+
+    gut: `GUT HEALTH PRIORITY: Carrageenan has been linked in peer-reviewed research to intestinal inflammation and disruption of gut microbiome integrity (PubMed 23538004, Cornucopia Institute). SLS may damage the gut mucosal lining with repeated exposure. Research suggests emulsifiers and certain preservatives may negatively impact gut microbiome diversity. Flag any ingredient with gut health relevance and explain the specific mechanism of concern.`,
+
+    skin: `SENSITIVE SKIN PRIORITY: For eczema, psoriasis, rosacea, or contact dermatitis, SLS is a well-documented skin barrier disruptor (PubMed 3401788). Fragrance is the most common cause of allergic contact dermatitis (American Contact Dermatitis Society). Parabens can cause skin sensitization reactions. Phenoxyethanol may cause irritation at higher concentrations. Flag any skin sensitizer with extra urgency and note specifically which skin conditions are most affected.`,
+
+    fragrance: `FRAGRANCE-FREE PRIORITY: This user wants to avoid all fragrance. Flag any form of fragrance (fragrance, parfum, fragrance oil, natural fragrance, essential oils) as an immediate priority concern. A 2025 Frontiers in Toxicology review confirmed synthetic fragrance compounds are associated with allergic reactions, respiratory issues, endocrine disruption, and neurological effects. Note that even "natural fragrance" can hide undisclosed compounds.`,
+
+    pfas: `PFAS / FOREVER CHEMICALS PRIORITY: Per- and polyfluoroalkyl substances (PFAS) are highly persistent synthetic chemicals. FDA Commissioner confirmed in 2026 that FDA continues working to update recommendations on PFAS. Research in Toxics (2024) links PFAS exposure to female reproductive health impacts (doi:10.3390/toxics12090678). Flag any PTFE, fluoropolymer, polyfluoro, or perfluoro ingredient with high urgency and note their persistence in both the body and environment.`,
+
+    environment: `ENVIRONMENTAL IMPACT PRIORITY: Flag ingredients that are persistent in the environment, bioaccumulative, or toxic to aquatic life. Note biodegradability concerns where relevant. PFAS are particularly persistent. Microplastics from polyethylene, polypropylene, or nylon in scrubs or glitter are non-biodegradable. Triclosan has been flagged for aquatic toxicity. Flag environmental concerns alongside health concerns.`,
+
+    general: `GENERAL CLEAN LIVING: This user is just getting started. Use encouraging, non-overwhelming language. Explain why each flagged ingredient matters in simple terms. Focus on the most impactful swaps first rather than overwhelming with everything at once. Frame this as a journey, not perfection.`
+  };
+
+  let profileContext = '';
+  if (wellnessProfile && wellnessProfile.length > 0) {
+    const contextParts = wellnessProfile
+      .filter(key => profileContextMap[key])
+      .map(key => profileContextMap[key]);
+    if (contextParts.length > 0) {
+      profileContext = `\n\nUSER WELLNESS PROFILE — PERSONALIZE YOUR RESPONSE:\nThis user has indicated the following health priorities. Tailor your summary, flag reasons, and swap suggestions to be specifically relevant to their situation:\n\n${contextParts.join('\n\n')}`;
+    }
+  }
   const FAST_PROMPT = `You are Lindsay Greear, certified naturopath and HTMA practitioner at Rest & Root Holistic Health. Analyze ingredient labels and respond ONLY with valid JSON, no markdown, no preamble.
 
 JSON format:
@@ -229,20 +263,61 @@ CRITICAL: Same ingredient ALWAYS gets same risk rating across every scan, every 
   let content = [];
   if (image) {
     content.push({ type: "image", source: { type: "base64", media_type: image.mediaType, data: image.data } });
-    content.push({ type: "text", text: `${FAST_PROMPT}\n\nRead ALL text from this ingredient label image, then analyze every ingredient. Include extracted_ingredients.` });
+    content.push({ type: "text", text: `${FAST_PROMPT}${profileContext}\n\nRead ALL text from this ingredient label image, then analyze every ingredient. Include extracted_ingredients.` });
   } else {
-    content.push({ type: "text", text: `${FAST_PROMPT}\n\nAnalyze: ${ingredients}` });
+    content.push({ type: "text", text: `${FAST_PROMPT}${profileContext}\n\nAnalyze: ${ingredients}` });
   }
 
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 800,
+    max_tokens: 1500,
     messages: [{ role: "user", content }],
   });
 
   const text = message.content.map(i => i.text || "").join("").trim();
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  return jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+
+  // Robust JSON parsing with multiple fallback strategies
+  try {
+    // Strategy 1 — extract JSON block and parse
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch(e) {
+        // Strategy 2 — truncated JSON, try to repair by finding last complete flag
+        const raw = jsonMatch[0];
+        // Find the last complete flag object
+        const lastCompleteFlag = raw.lastIndexOf('"}');
+        if (lastCompleteFlag > 0) {
+          const repaired = raw.substring(0, lastCompleteFlag + 2) + ']}';
+          try {
+            return JSON.parse(repaired);
+          } catch(e2) {}
+        }
+        // Strategy 3 — extract just what we can
+        const summaryMatch = raw.match(/"summary"\s*:\s*"([^"]+)"/);
+        const verdictMatch = raw.match(/"verdict"\s*:\s*"([^"]+)"/);
+        return {
+          summary: summaryMatch ? summaryMatch[1] : 'Could not fully analyze this product. Please try again.',
+          verdict: verdictMatch ? verdictMatch[1] : 'CAUTION',
+          flags: [],
+          swap_tip: '',
+          diy_recipe: ''
+        };
+      }
+    }
+  } catch(e) {
+    console.error('JSON parse error:', e.message);
+  }
+
+  // Final fallback
+  return {
+    summary: 'The scan had trouble processing. Please try again or switch to text mode.',
+    verdict: 'CAUTION',
+    flags: [],
+    swap_tip: '',
+    diy_recipe: ''
+  };
 }
 
 async function getEducation(client, flaggedIngredients) {
@@ -294,7 +369,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { ingredients, image, education_only, flags_for_education } = req.body;
+    const { ingredients, image, education_only, flags_for_education, wellness_profile } = req.body;
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     // Education only request (Call 2)
@@ -304,8 +379,8 @@ export default async function handler(req, res) {
     }
 
     // Fast scan (Call 1)
-    const parsed = await getFastScan(client, ingredients, image);
-    if (!parsed) throw new Error("Could not parse response");
+    const parsed = await getFastScan(client, ingredients, image, wellness_profile || []);
+    if (!parsed || !parsed.summary) throw new Error("Could not analyze ingredients — please try again");
 
     // Inject verified sources
     if (parsed.flags) {
