@@ -127,6 +127,10 @@ const VERIFIED_SOURCES = {
     { name: "Campaign for Safe Cosmetics — Greenwashing", url: "https://www.safecosmetics.org/" },
     { name: "EWG — Misleading Label Claims", url: "https://www.ewg.org/skindeep/" },
     { name: "FTC — Green Guides", url: "https://www.ftc.gov/news-events/topics/truth-advertising/green-guides" }
+  ],
+  citric_acid: [
+    { name: "NIH — Citric Acid Production", url: "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7400278/" },
+    { name: "EWG Food Scores Database", url: "https://www.ewg.org/foodscores/" }
   ]
 };
 
@@ -259,7 +263,7 @@ function getSourcesForIngredient(name) {
   const n = name.toLowerCase();
   if (n.includes('paraben')) return VERIFIED_SOURCES.parabens;
   if (n.includes('fragrance') || n.includes('parfum')) return VERIFIED_SOURCES.fragrance;
-  if (n.includes('unscented') || n.includes('fragrance-free') || n.includes('greenwash')) return VERIFIED_SOURCES.greenwashing;
+  if (n.includes('greenwash') || n.includes('unscented') || n.includes('misleading')) return VERIFIED_SOURCES.greenwashing;
   if (n.includes('formaldehyde') || n.includes('dmdm') || n.includes('diazolidinyl') || n.includes('quaternium')) return VERIFIED_SOURCES.formaldehyde;
   if (n.includes('phthalate')) return VERIFIED_SOURCES.phthalates;
   if (n.includes('sodium lauryl') || n.includes('sls') || n.includes('sodium laureth') || n.includes('sles')) return VERIFIED_SOURCES.sls;
@@ -278,6 +282,7 @@ function getSourcesForIngredient(name) {
   if (n.includes('phosphate') || n.includes('triphosphate')) return VERIFIED_SOURCES.phosphates;
   if (n.includes('niacin') || n.includes('thiamin') || n.includes('riboflavin') || n.includes('folic acid') || n.includes('ferrous sulfate') || n.includes('vitamin b') || n.includes('synthetic vitamin') || n.includes('synthetic mineral')) return VERIFIED_SOURCES.synthetic_vitamins;
   if (n.includes('non-organic') || n.includes('conventional') || n.includes('pesticide')) return VERIFIED_SOURCES.non_organic;
+  if (n.includes('citric acid')) return VERIFIED_SOURCES.citric_acid;
   if (n.includes('salt') && !n.includes('himalayan') && !n.includes('celtic') && !n.includes('sea salt')) return VERIFIED_SOURCES.salt;
   if (n.includes('sugar') || n.includes('cane sugar') || n.includes('beet sugar')) return VERIFIED_SOURCES.sugar;
   if (n.includes('enriched') || n.includes('bleached flour') || n.includes('refined flour')) return VERIFIED_SOURCES.enriched_flour;
@@ -287,7 +292,7 @@ function getSourcesForIngredient(name) {
 async function getFastScan(client, ingredients, image, wellnessProfile) {
 
   const profileContextMap = {
-    hormone: `HORMONE HEALTH PRIORITY: Research published in Frontiers in Reproductive Health (2025) confirms that endocrine-disrupting chemicals (EDCs) in personal care products, including parabens, phthalates, and triclosan, can mimic, block, or interfere with hormone signaling even at low concentrations (PMC12289576). The NIH NIEHS confirms even low doses may be unsafe because the body's normal endocrine functioning involves very small changes in hormone levels. Flag any EDC with extra priority and explain specific hormone pathway affected.`,
+    hormone: `HORMONE HEALTH PRIORITY: Research published in Frontiers in Reproductive Health (2025) confirms that endocrine-disrupting chemicals (EDCs) in personal care products, including parabens, phthalates, and triclosan, can mimic, block, or interfere with hormone signaling even at low concentrations. The NIH NIEHS confirms even low doses may be unsafe. Flag any EDC with extra priority and explain specific hormone pathway affected.`,
     thyroid: `THYROID / AUTOIMMUNE PRIORITY: Research in Toxics (2021) identified EDCs including triclosan, phthalates, and bisphenols as particularly concerning for thyroid hormone regulation. For autoimmune conditions, SLS has been shown to disrupt mucosal barriers which may exacerbate immune reactivity. Flag any ingredient with thyroid or autoimmune relevance and explain the specific mechanism.`,
     pregnancy: `PREGNANCY / FERTILITY PRIORITY: A 2025 review in Frontiers in Reproductive Health found EDCs primarily influence the hypothalamus-pituitary-gonadal axis and embryonic growth. The NIH notes pregnant women and young children are more susceptible populations. Flag any ingredient of concern during pregnancy with extra urgency and practical avoidance guidance.`,
     kids: `CHILDREN / BABIES PRIORITY: Research confirms children face unique risks during key developmental windows and that phthalates may impair brain development and contribute to early puberty in girls. Always flag any potentially harmful ingredient as especially concerning for children and suggest the safest possible alternatives.`,
@@ -316,7 +321,7 @@ JSON format:
   "extracted_ingredients": "comma separated ingredients from photo (photo scans only, else empty string)",
   "summary": "2-3 warm plain English sentences about the product overall. Do NOT include swap suggestions or DIY recipes in the summary — those go in swap_tip and diy_recipe fields only.",
   "swap_tip": "One sentence recommending a specific clean product to swap to. No DIY here — just a product recommendation. Empty string if product is clean.",
-  "diy_recipe": "ONLY if a simple DIY version exists AND it's meaningfully better than buying clean. Exact recipe with measurements. Empty string if no good DIY exists OR if you already gave a product swap. Never duplicate what is in swap_tip.",
+  "diy_recipe": "ONLY if a simple DIY version exists AND it is meaningfully better than buying clean. Exact recipe with measurements. Empty string if no good DIY exists OR if you already gave a product swap. Never duplicate what is in swap_tip.",
   "flags": [
     {
       "name": "exact ingredient name",
@@ -331,13 +336,14 @@ CRITICAL PARSING RULES — READ THESE FIRST BEFORE ANALYZING ANYTHING:
 1. When you see "Artificial Color (Including X, Y, and Z)" or any bundled phrasing, you MUST extract and flag EACH color individually as its own flag entry. Never treat a bundle as one ingredient.
 2. When you see "Natural and Artificial Flavor" or "Natural and Artificial Flavors" flag it as AVOID — this phrasing means synthetic compounds are confirmed present.
 3. When you see "Vegetable Oil (Sunflower, Canola, and/or Corn Oil)" or any similar bundled oil listing, flag each oil individually.
-4. When ingredients appear inside parentheses as sub-ingredients (example: "Cheddar Cheese (Milk, Cheese Cultures, Salt, Enzymes)" or "Cheese Sauce Mix (Whey, Milk Fat, Salt...)"), analyze EVERY sub-ingredient individually. Do not skip sub-ingredients because they are nested.
+4. When ingredients appear inside parentheses as sub-ingredients at ANY level of nesting — for example "Cheese Sauce Mix (Whey, Milk Fat, Salt, Milk Protein Concentrate, Sodium Triphosphate...)" or "Enriched Macaroni (Wheat Flour, Durum Flour, Niacin, Ferrous Sulfate...)" — you MUST analyze and flag every single sub-ingredient individually. Do not skip or group them.
 5. Never skip an ingredient because it is grouped with others. Parse every single item at every level of nesting.
 6. Never rate an ingredient SAFE if you are not completely certain it has no documented concerns. Default to CAUTION when uncertain.
 7. Same ingredient ALWAYS gets the same risk rating every single scan, no exceptions.
-8. GREENWASHING ALERT: If a product is labeled "unscented", "fragrance-free", "natural", "clean", "gentle", or "hypoallergenic" but the ingredient list contains fragrance, parfum, synthetic preservatives, or other flagged ingredients, you MUST call this out explicitly as greenwashing in the flag reason. Use direct language: "This product claims to be [X] but contains [Y] — this is misleading marketing."
-9. ORGANIC RULE: If a food, spice, herb, grain, fruit, vegetable, or crop-based ingredient does not have "organic" in its name and the product is not labeled USDA Organic, flag it as CAUTION for potential pesticide residue. This applies to every scan of every food product.
+8. GREENWASHING ALERT: If a product is labeled "unscented", "fragrance-free", "natural", "clean", "gentle", "pure", "non-toxic", "green", "eco", or "hypoallergenic" but the ingredient list contains fragrance, parfum, synthetic preservatives, or other flagged ingredients, you MUST call this out explicitly as greenwashing in the flag reason. Use direct language: "This product claims to be [X] but contains [Y] — this is misleading marketing."
+9. ORGANIC RULE: If a food, spice, herb, grain, fruit, vegetable, or crop-based ingredient does not have the word organic in its name and the product is not labeled USDA Organic, flag it as CAUTION for potential pesticide residue. Apply this to every food scan without exception.
 10. SYNTHETIC RULE: Any ingredient that is synthetic, artificial, or heavily processed and serves no nutritional purpose must be flagged. When in doubt about whether something is synthetic, flag it as CAUTION.
+11. MOST IMPORTANT RULE: The flags array MUST contain an individual entry for every single concerning ingredient. If your summary describes a product as synthetic, ultra-processed, industrial, or concerning in any way, there MUST be corresponding AVOID or CAUTION flags for each ingredient that makes it so. A product with a negative summary and an empty or all-SAFE flags array is a critical failure. Never let this happen.
 
 RED FLAGS — ALWAYS rate as AVOID, no exceptions:
 parabens (methylparaben, propylparaben, butylparaben, ethylparaben),
@@ -356,7 +362,7 @@ Blue 1/Blue 1 Lake,
 Red 3,
 Blue 2,
 Green 3,
-artificial colors/artificial dyes/artificial color — when this phrase appears, flag it as AVOID and list every named dye inside it as a separate AVOID flag,
+artificial colors/artificial dyes/artificial color — when this phrase appears flag it as AVOID and list every named dye inside it as a separate AVOID flag,
 natural and artificial flavor/natural and artificial flavors — AVOID because confirmed synthetic compounds are present,
 artificial flavor/artificial flavors — AVOID,
 sodium nitrate,
@@ -400,19 +406,19 @@ dimethyl dicarbonate/DMDC,
 calcium disodium EDTA,
 butane/isobutane/propane as food propellants,
 sodium benzoate when combined with vitamin C,
-citric acid — AVOID when in processed food or listed without a natural source. In virtually all processed products citric acid is synthetically fermented from Aspergillus niger mold, not from citrus fruit. Flag as AVOID and note: "Despite the name, the citric acid in this product is almost certainly not from citrus — it is industrially produced using Aspergillus niger mold fermentation. Many people with mold sensitivities react to it.",
-sodium triphosphate/sodium tripolyphosphate/STPP — AVOID. Synthetic phosphate additive with no nutritional value. Research links high synthetic phosphate intake to kidney stress and cardiovascular strain. Used to make processed cheese sauce and meats hold together,
-disodium phosphate/trisodium phosphate/sodium phosphate — AVOID. Synthetic phosphate additive. Same family as sodium triphosphate. Used as an emulsifier and stabilizer in ultra-processed foods,
-calcium phosphate — AVOID when in processed food. Synthetic form used as an anti-caking agent and stabilizer, not the same as naturally occurring calcium in whole foods.
+citric acid in any processed or packaged product — AVOID. Despite the name the citric acid in virtually all processed products is not from citrus fruit. It is industrially produced using Aspergillus niger mold fermentation. Flag as AVOID and note: "Despite its name, the citric acid in this product is almost certainly not from citrus — it is industrially produced via Aspergillus niger mold fermentation. Many people with mold sensitivities react to it.",
+sodium triphosphate/sodium tripolyphosphate/STPP — AVOID. Synthetic phosphate additive with no nutritional value. Research links high synthetic phosphate intake to kidney stress and cardiovascular strain. A marker of ultra-processed food,
+disodium phosphate/trisodium phosphate/sodium phosphate — AVOID. Synthetic phosphate additive. Same concerns as sodium triphosphate,
+calcium phosphate in processed food — AVOID. Synthetic form used as an anti-caking agent and stabilizer in ultra-processed foods.
 
 CAUTION — ALWAYS rate as CAUTION:
 phenoxyethanol — CAUTION in beauty products. Synthetic preservative. Strongly suggest switching to a product preserved with natural alternatives like rosemary extract, vitamin E, or neem oil,
 ethylhexylglycerin — CAUTION. Synthetic preservative. Suggest natural alternatives,
-sodium benzoate alone (without vitamin C) — CAUTION. Synthetic preservative. Suggest natural alternatives,
+sodium benzoate alone without vitamin C — CAUTION. Synthetic preservative. Suggest natural alternatives,
 potassium sorbate — CAUTION. Synthetic preservative. Considered one of the safer synthetic options but still not a whole ingredient. Suggest natural alternatives,
-dimethicone — CAUTION. Synthetic silicone. Not a whole ingredient,
-carbomer — CAUTION. Synthetic polymer. Not a whole ingredient,
-tocopheryl acetate (synthetic vitamin E) — CAUTION. Synthetic form. Natural tocopherols from whole food sources are preferred,
+dimethicone — CAUTION. Synthetic silicone,
+carbomer — CAUTION. Synthetic polymer,
+tocopheryl acetate synthetic vitamin E — CAUTION. Synthetic form. Natural tocopherols from whole food sources are preferred,
 retinyl palmitate — CAUTION. Synthetic form of vitamin A,
 aluminum compounds — CAUTION,
 fluoride — CAUTION,
@@ -420,41 +426,40 @@ mineral oil — CAUTION. Petroleum derivative,
 petrolatum — CAUTION. Petroleum derivative,
 talc — CAUTION,
 nanoparticles — CAUTION,
-essential oils — CAUTION. Quality matters significantly. Look for brands that are third-party tested, display a GC/MS (gas chromatography/mass spectrometry) test result, clearly label the full botanical name of the plant, and are used properly diluted with a carrier oil. A quality sourced and diluted essential oil is very different from a low-quality or undiluted one. This is about informed choice, not avoidance,
+essential oils — CAUTION. Quality matters significantly. Look for brands that are third-party tested and display a GC/MS (gas chromatography/mass spectrometry) test result, clearly label the full botanical name of the plant, are sold by a reputable supplier, and are used properly diluted with a carrier oil. A properly sourced and diluted essential oil is very different from a low-quality or undiluted one. This is about informed choice not avoidance,
 maltodextrin — CAUTION. Highly processed, high glycemic index, may disrupt gut microbiome. Not a whole ingredient,
 modified food starch — CAUTION. Heavily processed. Not a whole ingredient,
 autolyzed yeast extract/hydrolyzed vegetable protein/HVP — CAUTION. Hidden glutamate sources,
 carnauba wax — CAUTION. Processed wax coating,
-seed oils in food including sunflower oil/safflower oil/soybean oil/corn oil/cottonseed oil/rapeseed oil/canola oil — CAUTION. Highly refined oils. Current peer-reviewed human research does NOT confirm inflammatory effects as established fact but from a naturopathic whole-food perspective minimizing highly refined oils is reasonable. Flag with honest nuance. Always note that cold-pressed organic versions are significantly better if oil is needed,
+seed oils in food including sunflower oil/safflower oil/soybean oil/corn oil/cottonseed oil/rapeseed oil/canola oil — CAUTION not AVOID. Highly refined oils. Current peer-reviewed human research does NOT confirm inflammatory effects as established fact. From a naturopathic whole-food perspective minimizing highly refined oils is reasonable. Always note that cold-pressed organic versions are significantly better if oil is needed,
 xanthan gum — CAUTION. Synthetic fermentation product. Can cause digestive issues in sensitive individuals,
 carboxymethylcellulose/cellulose gum — CAUTION. Synthetic emulsifier,
 polysorbate 80/polysorbate 60 — CAUTION. Synthetic emulsifier,
 silicon dioxide in high amounts — CAUTION,
 calcium propionate — CAUTION. Synthetic preservative,
 dextrose — CAUTION. Highly refined simple sugar, high glycemic index, spikes blood sugar rapidly. Not a whole ingredient,
-lactic acid — CAUTION unless explicitly labeled as naturally fermented. In unlabeled processed products lactic acid is typically synthetic. Note: "If this product labels its lactic acid as naturally fermented, it is generally fine. If unlabeled as in most processed foods, it is likely synthetic — flag as a concern and look for a whole food alternative",
+lactic acid — CAUTION unless explicitly labeled as naturally fermented. In unlabeled processed products lactic acid is typically synthetic. Note: "If this product labels its lactic acid as naturally fermented it is generally fine. If unlabeled as in most processed foods it is likely synthetic.",
 annatto — CAUTION. Natural color but some research links it to inflammatory responses in sensitive individuals,
-tapioca flour/tapioca starch — CAUTION in processed products. Filler ingredient with minimal nutritional value,
-milk protein concentrate/MPC — CAUTION. Heavily processed dairy derivative. Often imported with minimal quality oversight. A marker of ultra-processed food. Not a whole ingredient,
-enriched flour/enriched wheat flour/enriched macaroni/enriched pasta — CAUTION. The word enriched signals that natural nutrients were stripped out during processing and inferior synthetic versions were added back. This is not a whole food. Flag clearly: "Enriched means the natural goodness was removed and synthetic vitamins were added back in — this is not a whole grain and is linked to blood sugar spikes and gut microbiome disruption. Choose 100% whole grain or organic whole grain instead",
+tapioca flour/tapioca starch — CAUTION in processed products. Filler with minimal nutritional value,
+milk protein concentrate/MPC — CAUTION. Heavily processed dairy derivative. Often imported with minimal quality oversight. A marker of ultra-processed food,
+enriched flour/enriched wheat flour/enriched macaroni/enriched pasta/enriched grain — CAUTION. Flag clearly: "The word enriched means the natural nutrients were stripped out during processing and inferior synthetic versions were added back in. This is not a whole food. Choose 100% whole grain or organic whole grain instead.",
 bleached flour/white flour/refined flour — CAUTION. Same concerns as enriched flour,
+synthetic vitamins and minerals added to food including niacin/thiamin mononitrate/riboflavin/folic acid/ferrous sulfate/pyridoxine hydrochloride/cyanocobalamin/zinc oxide/cupric sulfate and similar — CAUTION. Flag clearly: "These are synthetic versions of vitamins and minerals added back after processing stripped out the natural ones. While technically better than no nutrition at all, synthetic isolated nutrients do not behave the same way in the body as nutrients from whole foods. Their presence is a clear sign this is an ultra-processed product. Always choose whole food sources instead.",
+salt plain unspecified — CAUTION. Standard table salt is heavily processed, stripped of trace minerals, and often contains synthetic anti-caking agents. Note: "Choose Celtic sea salt as the gold standard — it retains the full spectrum of trace minerals. Pink Himalayan salt is also a good option. Avoid standard table salt.",
+sugar/cane sugar/beet sugar non-organic unlabeled — CAUTION. Conventional sugar is likely from GMO sugar beets treated with glyphosate. Note: "Better options include raw organic coconut sugar, raw organic honey, pure maple syrup, or medjool dates as a whole food sweetener.",
+spices non-organic unlabeled — CAUTION. Non-organic spices and herbs may carry pesticide residue and are often irradiated. Note: "Choose certified organic spices whenever possible.",
+herbs non-organic unlabeled — CAUTION. Same concerns as non-organic spices,
+garlic powder non-organic — CAUTION. Potential pesticide residue. Choose organic,
+onion powder non-organic — CAUTION. Potential pesticide residue. Choose organic,
+tomato powder non-organic — CAUTION. Potential pesticide residue. Choose organic,
+bell pepper powder non-organic — CAUTION. Potential pesticide residue. Choose organic,
+corn/corn flour/corn starch non-organic — CAUTION. Conventional corn is almost certainly GMO and treated with glyphosate. Always choose organic,
+wheat flour/durum flour non-organic — CAUTION. Conventional wheat is frequently sprayed with glyphosate as a pre-harvest desiccant. Choose organic whole grain,
+vegetable powder non-organic — CAUTION. Potential pesticide residue,
 rBGH/rBST/recombinant bovine growth hormone — CAUTION,
 ractopamine — CAUTION,
 glyphosate residues — CAUTION,
-ethyl carbamate — CAUTION,
-MSG/monosodium glutamate — already listed as AVOID above, never downgrade,
-synthetic vitamins and minerals added to food including niacin/thiamin mononitrate/riboflavin/folic acid/ferrous sulfate/pyridoxine hydrochloride/cyanocobalamin/zinc oxide/cupric sulfate and similar — CAUTION. Note clearly: "These are synthetic versions of vitamins and minerals added back after processing stripped out the natural ones. While better than nothing, synthetic isolated nutrients do not behave the same way in the body as nutrients from whole foods. They are a sign this is an ultra-processed product. Choose whole food sources instead",
-salt (plain, unspecified) — CAUTION. Standard table salt is heavily processed, stripped of trace minerals, and often contains anti-caking agents. Suggest: "Choose Celtic sea salt as the gold standard — it retains the full spectrum of trace minerals. Pink Himalayan salt is also a good option. Avoid standard table salt",
-sugar/cane sugar/beet sugar (non-organic, unlabeled) — CAUTION. Conventional sugar is likely from GMO sugar beets treated with glyphosate. Even organic sugar is still refined and high glycemic. Note: "Better options include raw organic coconut sugar, raw organic honey, pure maple syrup, or medjool dates as a whole food sweetener",
-spices (non-organic, unlabeled) — CAUTION. Non-organic spices and herbs may carry pesticide residue and are often irradiated. Note: "Choose certified organic spices whenever possible to avoid pesticide residue and irradiation",
-herbs (non-organic, unlabeled) — CAUTION. Same concerns as non-organic spices,
-garlic powder (non-organic) — CAUTION. Flag for potential pesticide residue. Suggest organic,
-onion powder (non-organic) — CAUTION. Flag for potential pesticide residue. Suggest organic,
-tomato powder (non-organic) — CAUTION. Flag for potential pesticide residue. Suggest organic,
-bell pepper powder (non-organic) — CAUTION. Flag for potential pesticide residue. Suggest organic,
-corn/corn flour/corn starch (non-organic) — CAUTION. Conventional corn is almost certainly GMO and treated with glyphosate. Always choose organic,
-wheat flour/durum flour (non-organic) — CAUTION. Conventional wheat is frequently sprayed with glyphosate as a pre-harvest desiccant. Choose organic whole grain,
-vegetable powder (non-organic) — CAUTION. Flag for potential pesticide residue.
+ethyl carbamate — CAUTION.
 
 DAIRY INGREDIENT RULE:
 When any dairy ingredient appears (milk, whole milk, skim milk, nonfat milk, cream, heavy cream, whey, whey protein concentrate, casein, lactose, butter, buttermilk, cheese, yogurt, dairy, dairy solids, milk solids, milk powder, condensed milk, romano cheese, cheddar cheese, milk fat, milk protein concentrate), check whether the product label also contains any of these terms: rBGH-free, rBST-free, no artificial hormones, hormone-free, certified organic, USDA organic.
@@ -464,29 +469,31 @@ If the product does NOT contain any of those terms: rate each dairy ingredient a
 ORGANIC ABSENCE RULE:
 When a food product contains any crop-based ingredient (grains, flours, vegetables, fruits, spices, herbs, oils, sugars, starches) that is not labeled organic and the product itself is not labeled USDA Organic, flag each such ingredient as CAUTION and note: "This ingredient is not listed as organic. Non-organic [ingredient] may carry pesticide residue. Choose organic when possible." Apply this rule consistently to every food scan.
 
-SAFE — only rate as SAFE if the ingredient is: water, certified organic botanical extract in low concentration, natural tocopherols (natural vitamin E from whole food source), rosemary extract as a natural preservative, sunflower lecithin (organic), ascorbic acid from a natural source, aloe vera (organic), apple cider vinegar (organic, raw), or another ingredient that is both whole, unprocessed, and organic or wildcrafted with absolutely no documented concerns. If you are not certain, default to CAUTION. Enzymes and cheese cultures in dairy products can be rated SAFE but note that quality and source vary — organic and non-GMO sourced cultures are preferred.
+SAFE — only rate as SAFE if the ingredient is: water, certified organic botanical extract in low concentration, natural tocopherols from a whole food source, rosemary extract as a natural preservative, organic sunflower lecithin, ascorbic acid from a natural source, organic aloe vera, organic apple cider vinegar raw, or another ingredient that is both whole and unprocessed and organic or wildcrafted with absolutely no documented concerns. Enzymes and cheese cultures in dairy products may be rated SAFE but note that organic and non-GMO sourced cultures are preferred. If you are not certain default to CAUTION.
 
 GREENWASHING RULE:
-If any product uses the words "natural", "clean", "gentle", "pure", "non-toxic", "green", "eco", "hypoallergenic", "unscented", or "fragrance-free" anywhere on its label but contains ANY synthetic ingredient, preservative, fragrance, or flagged ingredient, call it out directly and firmly. Example: "This product markets itself as 'natural' but contains [ingredient] — this is greenwashing. A truly natural product would not contain synthetic [ingredient]. Do not be misled by front-of-label claims — always read the ingredient list."
+If any product uses the words natural, clean, gentle, pure, non-toxic, green, eco, hypoallergenic, unscented, or fragrance-free anywhere on its label but contains ANY synthetic ingredient, preservative, fragrance, or flagged ingredient, call it out directly and firmly in the relevant flag reason. Example: "This product markets itself as natural but contains [ingredient] — this is greenwashing. A truly natural product would not contain synthetic [ingredient]. Do not be misled by front-of-label claims — always read the ingredient list."
 
 NOTE ON SEED OILS: Always clarify this is CAUTION not AVOID. Note that cold-pressed organic versions are significantly better. Never overstate the evidence on inflammatory claims.
 
-NOTE ON ESSENTIAL OILS: Flag as CAUTION with focus on sourcing, dilution, and quality. Always note that third-party tested oils with GC/MS results and clearly labeled botanical names from reputable suppliers, used properly diluted, are very different from low-quality or undiluted oils. This is about informed choice, not avoidance.
+NOTE ON ESSENTIAL OILS: Flag as CAUTION. Always note that third-party tested oils with GC/MS results and clearly labeled botanical names from reputable suppliers used properly diluted are very different from low-quality or undiluted oils. This is about informed choice not avoidance.
 
-NOTE ON SYNTHETIC VITAMINS: Always make it very clear these are synthetic, that they are a sign of ultra-processed food, and that whole food sources are always preferred. Do not frame them positively — they are CAUTION because they are better than zero nutrition but they are not good.
+NOTE ON SYNTHETIC VITAMINS: Always make it very clear these are synthetic, that they are a sign of ultra-processed food, and that whole food sources are always preferred. Do not frame them positively — they are CAUTION because they are marginally better than zero nutrition but they are not good.
 
 NOTE ON DEXTROSE AND SUGARS: Flag dextrose and added sugars as CAUTION. Explain blood sugar and gut microbiome impact in plain English. Always suggest whole food sweetener alternatives.
 
 NOTE ON BUNDLED INGREDIENTS: Always parse bundled ingredient lists completely. "Artificial Color (Including Yellow 6, Yellow 5, and Red 40)" means four separate flag entries — one for Artificial Color and one each for Yellow 6, Yellow 5, and Red 40, all rated AVOID.
 
-NOTE ON CITRIC ACID: In virtually all processed and packaged products, citric acid is synthetically produced via mold fermentation, not from citrus fruit. Always flag as AVOID in processed products and explain this clearly. Only rate as SAFE if the product is a whole fresh citrus item where citric acid is naturally occurring.`;
+NOTE ON CITRIC ACID: In virtually all processed and packaged products citric acid is synthetically produced via Aspergillus niger mold fermentation not from citrus fruit. Always flag as AVOID in processed products and explain this clearly. Only rate as SAFE if the product is a whole fresh citrus item where citric acid is naturally occurring.
+
+FINAL MANDATORY CHECK BEFORE RETURNING JSON: Look at your summary. If it contains any negative language about the product — words like synthetic, ultra-processed, industrial, processed, concerning, phosphate, enriched, conventional, non-organic, or similar — go back through your flags array and make sure every ingredient that justifies that language has its own individual flag entry rated AVOID or CAUTION. If your flags array is empty or contains only SAFE ratings but your summary is negative, you have made a critical error. Fix it before returning.`;
 
   let content = [];
   if (image) {
     content.push({ type: "image", source: { type: "base64", media_type: image.mediaType, data: image.data } });
-    content.push({ type: "text", text: `${FAST_PROMPT}${profileContext}\n\nRead ALL text from this ingredient label image, then analyze every ingredient including all sub-ingredients inside parentheses at every level. Include extracted_ingredients.` });
+    content.push({ type: "text", text: `${FAST_PROMPT}${profileContext}\n\nRead ALL text from this ingredient label image, then analyze every ingredient including all sub-ingredients inside parentheses at every level of nesting. Include extracted_ingredients.` });
   } else {
-    content.push({ type: "text", text: `${FAST_PROMPT}${profileContext}\n\nAnalyze every ingredient including all sub-ingredients inside parentheses: ${ingredients}` });
+    content.push({ type: "text", text: `${FAST_PROMPT}${profileContext}\n\nAnalyze every ingredient including all sub-ingredients inside parentheses at every level of nesting: ${ingredients}` });
   }
 
   const message = await client.messages.create({
@@ -547,8 +554,8 @@ ACCURACY RULES:
 - Use "is known to" only for established facts
 - Use "some practitioners believe" for naturopathic perspectives not yet in mainstream research
 - Never overstate harm
-- For synthetic vitamins and minerals: explain clearly that synthetic isolated nutrients do not behave the same way in the body as nutrients from whole foods, and that their presence is a sign of ultra-processed food
-- For citric acid: explain the mold fermentation production process in plain English and note mold sensitivity concerns
+- For synthetic vitamins and minerals: explain clearly that synthetic isolated nutrients do not behave the same way in the body as nutrients from whole foods and that their presence is a sign of ultra-processed food
+- For citric acid: explain the Aspergillus niger mold fermentation production process in plain English and note mold sensitivity concerns
 - For non-organic ingredients: explain pesticide residue concerns and the difference organic certification makes
 - For essential oils: include practical sourcing guidance — look for third-party tested brands that display a GC/MS test result, clearly label the full botanical name of the plant, are sold by a reputable supplier, and are used properly diluted with a carrier oil. Make clear this is about informed choice not avoidance
 - For greenwashing: explain what the misleading claim is, why it is misleading, and what to look for instead
@@ -617,10 +624,41 @@ export default async function handler(req, res) {
       const hasDangerCombination = combinations.some(c => c.severity === 'DANGER');
       const hasCautionCombination = combinations.length > 0;
 
+      // Safety net — if summary contains red flag language but flags came back
+      // empty or all SAFE, something went wrong with the AI response.
+      // Force CAUTION at minimum so we never show "you found a good one"
+      // on a product the summary itself describes as problematic.
+      const summaryRedFlags = parsed.summary && (
+        parsed.summary.toLowerCase().includes('synthetic') ||
+        parsed.summary.toLowerCase().includes('ultra-processed') ||
+        parsed.summary.toLowerCase().includes('processed') ||
+        parsed.summary.toLowerCase().includes('industrial') ||
+        parsed.summary.toLowerCase().includes('no place') ||
+        parsed.summary.toLowerCase().includes('avoid') ||
+        parsed.summary.toLowerCase().includes('concern') ||
+        parsed.summary.toLowerCase().includes('enriched') ||
+        parsed.summary.toLowerCase().includes('conventional') ||
+        parsed.summary.toLowerCase().includes('non-organic') ||
+        parsed.summary.toLowerCase().includes('stripped') ||
+        parsed.summary.toLowerCase().includes('additive') ||
+        parsed.summary.toLowerCase().includes('chemical')
+      );
+
       if (hasAvoid || hasDangerCombination) {
         parsed.verdict = 'PUT IT BACK';
       } else if (hasCaution || hasCautionCombination) {
         parsed.verdict = 'CAUTION';
+      } else if (summaryRedFlags && flaggedIngredients.length === 0) {
+        // Summary knows it is bad but flags are empty — force CAUTION
+        // and add a catch-all flag so the user sees something
+        parsed.verdict = 'CAUTION';
+        parsed.flags.push({
+          name: 'Ultra-Processed Product',
+          risk: 'CAUTION',
+          reason: 'This product contains multiple synthetic, processed, or industrial ingredients that have no place in a whole food diet. See summary for details.',
+          found_in: 'Packaged and processed food products',
+          sources: VERIFIED_SOURCES.general
+        });
       } else {
         parsed.verdict = 'LOOKS CLEAN';
       }
