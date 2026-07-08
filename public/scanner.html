@@ -16,12 +16,14 @@
       } catch(e) {}
       if (localStorage.getItem('rr_unlocked') === 'true') return;
       if (localStorage.getItem('rr_free_scan_available') === 'true') return;
+      if (localStorage.getItem('rr_free_scan_used') === 'true') return;
       window.location.href = '/onboarding';
     } catch(e) {
       const params = new URLSearchParams(window.location.search);
       if (params.get('key') === 'RootScanner2025') { localStorage.setItem('rr_unlocked', 'true'); return; }
       if (localStorage.getItem('rr_unlocked') === 'true') return;
       if (localStorage.getItem('rr_free_scan_available') === 'true') return;
+      if (localStorage.getItem('rr_free_scan_used') === 'true') return;
       window.location.href = '/onboarding';
     }
   })();
@@ -83,7 +85,7 @@ fbq('track', 'PageView');
   .example-btn { font-size: 12px; color: var(--sage); background: none; border: 1px solid var(--sage); border-radius: 20px; padding: 4px 12px; cursor: pointer; font-family: inherit; font-weight: 500; }
   .scan-btn { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; font-family: inherit; border: none; border-radius: 10px; background: var(--sage); color: white; cursor: pointer; letter-spacing: 1px; transition: background 0.2s; }
   .scan-btn:hover { background: var(--deep-sage); }
-  .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; background: var(--brown); }
   .results { margin-top: 24px; }
   .verdict-banner { padding: 16px 20px; border-radius: 10px; margin-bottom: 16px; text-align: center; }
   .verdict-banner.danger { background: var(--red); color: white; }
@@ -268,21 +270,63 @@ fbq('track', 'PageView');
   const PRODUCTS = { monthly: 'TWIAP793', annual: 'TWIAP510' };
 
   // Init
-  (function init() {
-    isSubscriber = localStorage.getItem('rr_unlocked') === 'true';
+  (async function init() {
+    // Check localStorage first
+    const localUnlocked = localStorage.getItem('rr_unlocked') === 'true';
+
+    if (localUnlocked) {
+      // Verify the localStorage flag against an actual Twinr purchase check
+      // This prevents stale test data from giving free access forever
+      try {
+        const purchases = await twinr_get_iap_purchases();
+        if (Array.isArray(purchases) && purchases.length > 0) {
+          isSubscriber = true;
+        } else {
+          // localStorage says unlocked but no active purchase found
+          // Clear the stale flag so the paywall works correctly
+          localStorage.removeItem('rr_unlocked');
+          isSubscriber = false;
+        }
+      } catch(e) {
+        // twinr not available in this context — trust localStorage as fallback
+        isSubscriber = true;
+      }
+    } else {
+      // No localStorage flag — do a fresh Twinr check
+      try {
+        const purchases = await twinr_get_iap_purchases();
+        if (Array.isArray(purchases) && purchases.length > 0) {
+          localStorage.setItem('rr_unlocked', 'true');
+          isSubscriber = true;
+        }
+      } catch(e) {
+        isSubscriber = false;
+      }
+    }
+
     const hasFreeScan = localStorage.getItem('rr_free_scan_available') === 'true';
     const freeScanUsed = localStorage.getItem('rr_free_scan_used') === 'true';
+
     if (!isSubscriber && hasFreeScan && !freeScanUsed) {
       document.getElementById('freeScanBanner').style.display = 'block';
     }
+
+    // If free scan already used and not a subscriber, disable scan button immediately
+    if (!isSubscriber && freeScanUsed) {
+      const scanBtn = document.getElementById('scanBtn');
+      scanBtn.disabled = true;
+      scanBtn.textContent = '🔒 Subscribe to Scan Again';
+    }
+
     const savedProfile = JSON.parse(localStorage.getItem('rr_wellness_profile') || '[]');
     if (savedProfile.length > 0) {
       document.getElementById('profileBanner').style.display = 'block';
     }
+
     try { fbq('track', 'ViewContent', { content_name: isSubscriber ? 'scanner_subscriber' : 'scanner_free_user' }); } catch(e) {}
   })();
 
-  // Mode switching — uses display style, not hidden class
+  // Mode switching
   function setMode(mode) {
     currentMode = mode;
     document.getElementById('photo-mode').style.display = mode === 'photo' ? 'block' : 'none';
@@ -295,20 +339,15 @@ fbq('track', 'PageView');
     }
   }
 
-  // Photo handling — uses URL.createObjectURL for instant preview
+  // Photo handling
   function handlePhoto(input) {
     const file = input.files[0];
     if (!file) return;
-
-    // Show preview immediately using object URL
     const objectUrl = URL.createObjectURL(file);
     const previewImg = document.getElementById('previewImg');
     const previewContainer = document.getElementById('previewContainer');
-
     previewImg.src = objectUrl;
     previewContainer.style.display = 'block';
-
-    // Read as base64 for API
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target.result;
@@ -317,7 +356,6 @@ fbq('track', 'PageView');
       document.getElementById('scanBtn').textContent = '🔍 Scan This Label';
     };
     reader.onerror = () => {
-      // Fallback if FileReader fails
       photoData = null;
       photoMediaType = 'image/jpeg';
     };
@@ -344,8 +382,6 @@ fbq('track', 'PageView');
   }
 
   function showPaywall() {
-    // Redirect to standalone paywall — proven to work in Twinr
-    // Fixed overlay blocks inapppurchase:// in webview
     try { fbq('track', 'ViewContent', { content_name: 'paywall_post_scan' }); } catch(e) {}
     window.location.href = '/paywall?from=scan';
   }
@@ -370,7 +406,6 @@ fbq('track', 'PageView');
         <div style="font-size:11px;color:#8B6F5C;">7-day free trial · Cancel anytime</div>
       </div>
     `;
-    // When they tap "Actually I'm ready" — restore the full paywall
     document.getElementById('readyBtn').addEventListener('click', function() {
       restorePaywall();
     });
@@ -403,7 +438,6 @@ fbq('track', 'PageView');
       <button class="paywall-cta" id="paywallCtaBtn" type="button">Start My Free Trial →</button>
       <button class="paywall-no-thanks" type="button">No thanks, I'll pass for now</button>
     `;
-    // Re-attach all event listeners
     paywallPlan = 'annual';
     document.getElementById('pw-annual').addEventListener('click', () => selectPaywallPlan('annual'));
     document.getElementById('pw-monthly').addEventListener('click', () => selectPaywallPlan('monthly'));
@@ -416,8 +450,6 @@ fbq('track', 'PageView');
   function startPaywallPurchase() {
     const productId = PRODUCTS[paywallPlan];
     try { fbq('track', 'InitiateCheckout', { content_name: paywallPlan + '_trial' }); } catch(e) {}
-
-    // This is the exact method that works in the live Twinr app
     window.location.href = `inapppurchase://twinr.dev?product_id=${productId}`;
     if (window.TwinrBridge) window.TwinrBridge.purchase(productId);
   }
@@ -432,6 +464,10 @@ fbq('track', 'PageView');
         isSubscriber = true;
         dismissPaywall();
         document.getElementById('freeScanBanner').style.display = 'none';
+        // Re-enable scan button for new subscriber
+        const scanBtn = document.getElementById('scanBtn');
+        scanBtn.disabled = false;
+        scanBtn.textContent = '🔍 Scan These Ingredients';
         try { fbq('track', 'Subscribe'); } catch(e) {}
       }
     } catch(e) {}
@@ -441,7 +477,7 @@ fbq('track', 'PageView');
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
   if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => {}); }
 
-  // Scan function
+  // Main scan function
   async function scan() {
     const btn = document.getElementById('scanBtn');
     const results = document.getElementById('results');
@@ -451,17 +487,14 @@ fbq('track', 'PageView');
       const freeScanUsed = localStorage.getItem('rr_free_scan_used') === 'true';
       const freeScanAvailable = localStorage.getItem('rr_free_scan_available') === 'true';
 
-      // Re-check Twinr in case localStorage is stale
-      try {
-        const purchases = await twinr_get_iap_purchases();
-        if (Array.isArray(purchases) && purchases.length > 0) {
-          localStorage.setItem('rr_unlocked', 'true');
-          isSubscriber = true;
-        }
-      } catch(e) {}
+      // If free scan already used, redirect to paywall immediately
+      if (freeScanUsed) {
+        showPaywall();
+        return;
+      }
 
-      if (!isSubscriber && freeScanUsed) { showPaywall(); return; }
-      if (!isSubscriber && !freeScanAvailable && !freeScanUsed) {
+      // If no free scan has been granted yet, grant one now
+      if (!freeScanAvailable && !freeScanUsed) {
         localStorage.setItem('rr_free_scan_available', 'true');
       }
     }
@@ -503,19 +536,30 @@ fbq('track', 'PageView');
       const data = await response.json();
       clearInterval(msgInterval);
       renderResults(data);
-      btn.disabled = false;
+
+      // Reset scan button text (it may still say "Scan This Label" from photo mode)
       btn.innerHTML = '🔍 Scan These Ingredients';
 
       if (!isSubscriber) {
+        // Mark free scan as used BEFORE anything else
         localStorage.setItem('rr_free_scan_used', 'true');
         localStorage.removeItem('rr_free_scan_available');
         document.getElementById('freeScanBanner').style.display = 'none';
 
-        // Scroll to results first so they can see them
+        // Disable scan button immediately so they cannot scan again
+        // during the 4.5 seconds before the paywall redirect
+        btn.disabled = true;
+        btn.textContent = '🔒 Subscribe to Scan Again';
+
+        // Scroll to results so they can see them
         document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-        // Wait longer — let them actually read the result before paywall
+        // Redirect to paywall after 4.5 seconds
         setTimeout(() => showPaywall(), 4500);
+
+      } else {
+        btn.disabled = false;
+        document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
       const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
@@ -634,7 +678,6 @@ fbq('track', 'PageView');
     html += `<button class="share-btn" onclick="shareResult()">${shareLabels[verdict] || '📲 Share This Scan'}</button><button class="share-btn-fb" onclick="saveForFacebook()">💾 Save for Facebook</button><div class="share-caption">${verdict === 'LOOKS CLEAN' ? 'Show your people what clean actually looks like 🌿' : 'Your people need to know about this 🌿'}</div>`;
 
     document.getElementById('results').innerHTML = html;
-    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function saveForFacebook() {
@@ -656,7 +699,7 @@ fbq('track', 'PageView');
     try { await navigator.clipboard.writeText(caption); } catch(e) {}
     const toast = document.createElement('div');
     toast.style.cssText = `position:fixed;bottom:0;left:0;right:0;background:#5C3D2E;color:white;padding:20px 24px 32px;font-size:14px;z-index:9999;text-align:center;line-height:1.6;border-radius:20px 20px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,0.3);`;
-    toast.innerHTML = `<div style="font-size:18px;font-weight:800;margin-bottom:8px;" id="fbToastTitle">📋 Caption copied! 🌿</div><div style="color:rgba(250,246,240,0.8);font-size:13px;">Open Facebook → tap Photo/Video →<br>select from your camera roll →<br>paste your caption → post!</div><button onclick="this.parentElement.remove()" style="margin-top:16px;background:#7A9E7E;color:white;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Got it! 🌿</button>`;
+    toast.innerHTML = `<div style="font-size:18px;font-weight:800;margin-bottom:8px;">📋 Caption copied! 🌿</div><div style="color:rgba(250,246,240,0.8);font-size:13px;">Open Facebook → tap Photo/Video →<br>select from your camera roll →<br>paste your caption → post!</div><button onclick="this.parentElement.remove()" style="margin-top:16px;background:#7A9E7E;color:white;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Got it! 🌿</button>`;
     document.body.appendChild(toast);
     setTimeout(() => { if (toast.parentElement) toast.remove(); }, 8000);
   }
