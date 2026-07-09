@@ -586,7 +586,7 @@ The overall_symptoms field must NEVER mention "regular consumption," "eating," o
 
 JSON format:
 {
-  "overall_symptoms": "1-2 sentences connecting ALL these ingredients together to symptoms the person may already feel. Use may contribute to language.",
+  "overall_symptoms": "1-2 sentences connecting ALL these ingredients together to symptoms the person may already feel. Use 'exposure to' language for cleaning and personal care products — NEVER say 'consumption,' 'eating,' 'diet,' or 'whole food.' For food products only, use normal dietary language.",
   "education": {
     "INGREDIENT_NAME": {
       "body_impact": "2-3 sentences. What does this do in the body. Plain English. Real symptoms.",
@@ -675,11 +675,11 @@ export default async function handler(req, res) {
         // Summary knows it is bad but flags are empty — force CAUTION
         // and add a catch-all flag so the user sees something
         parsed.verdict = 'CAUTION';
-        parsed.flags.push({
-          name: 'Ultra-Processed Product',
+      parsed.flags.push({
+          name: 'Synthetic Ingredients Detected',
           risk: 'CAUTION',
-          reason: 'This product contains multiple synthetic, processed, or industrial ingredients that have no place in a whole food diet. See summary for details.',
-          found_in: 'Packaged and processed food products',
+          reason: 'This product contains multiple synthetic or industrial ingredients. See summary for details.',
+          found_in: 'Packaged and processed products',
           sources: VERIFIED_SOURCES.general
         });
       } else {
