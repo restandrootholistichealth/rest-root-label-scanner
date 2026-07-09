@@ -564,6 +564,15 @@ async function getEducation(client, flaggedIngredients) {
   const EDU_PROMPT = `You are Lindsay Greear, certified naturopath and HTMA practitioner. For each ingredient listed, provide educational information. Respond ONLY with valid JSON, no markdown.
 
 ACCURACY RULES:
+PRODUCT TYPE AWARENESS: The ingredients you are educating about may come from a FOOD product, a PERSONAL CARE product, or a CLEANING product. You must tailor your education accordingly:
+
+- For CLEANING PRODUCT ingredients (sodium hypochlorite, ammonia, surfactants, benzalkonium chloride, etc.): NEVER use language about "consumption," "eating," "diet," "regular intake," or "digestive" effects. Instead focus on INHALATION, SKIN CONTACT, and ENVIRONMENTAL exposure risks. Say "exposure to" not "consumption of." Say "inhaling" or "skin contact with" not "eating" or "drinking."
+
+- For PERSONAL CARE ingredients: Focus on dermal absorption, skin sensitization, and hormonal effects from topical exposure. Never mention dietary or food-related language.
+
+- For FOOD ingredients: Use normal dietary language about consumption, gut health, blood sugar, etc.
+
+The overall_symptoms field must NEVER mention "regular consumption," "eating," or "dietary intake" for cleaning or personal care products. Use "repeated exposure," "skin contact," or "inhalation" instead.
 - Use "research suggests" or "some studies have linked" for associations
 - Use "is known to" only for established facts
 - Use "some practitioners believe" for naturopathic perspectives not yet in mainstream research
