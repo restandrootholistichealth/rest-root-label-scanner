@@ -497,8 +497,8 @@ FINAL MANDATORY CHECK BEFORE RETURNING JSON: Look at your summary. If it contain
   }
 
   const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 2000,
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 1500,
     messages: [{ role: "user", content }],
   });
 
