@@ -15,15 +15,21 @@
         }
       } catch(e) {}
       if (localStorage.getItem('rr_unlocked') === 'true') return;
-      if (localStorage.getItem('rr_free_scan_available') === 'true') return;
-      if (localStorage.getItem('rr_free_scan_used') === 'true') return;
+     if (localStorage.getItem('rr_free_scan_available') === 'true') return;
+      if (localStorage.getItem('rr_free_scan_used') === 'true') {
+        window.location.href = '/paywall';
+        return;
+      }
       window.location.href = '/onboarding';
     } catch(e) {
       const params = new URLSearchParams(window.location.search);
       if (params.get('key') === 'RootScanner2025') { localStorage.setItem('rr_unlocked', 'true'); return; }
       if (localStorage.getItem('rr_unlocked') === 'true') return;
       if (localStorage.getItem('rr_free_scan_available') === 'true') return;
-      if (localStorage.getItem('rr_free_scan_used') === 'true') return;
+      if (localStorage.getItem('rr_free_scan_used') === 'true') {
+        window.location.href = '/paywall';
+        return;
+      }
       window.location.href = '/onboarding';
     }
   })();
