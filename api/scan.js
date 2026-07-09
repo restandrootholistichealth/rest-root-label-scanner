@@ -333,6 +333,20 @@ JSON format:
 }
 
 CRITICAL PARSING RULES — READ THESE FIRST BEFORE ANALYZING ANYTHING:
+CRITICAL — PRODUCT TYPE DETECTION: Before applying ANY rules, determine what type of product this is based on its ingredients and context:
+
+FOOD PRODUCT: Something people eat or drink. Apply ALL food rules — ORGANIC ABSENCE RULE, DAIRY INGREDIENT RULE, synthetic vitamin flags, enriched flour flags, seed oil flags, sugar flags, salt flags, and whole food diet language.
+
+PERSONAL CARE PRODUCT: Shampoo, conditioner, lotion, moisturizer, serum, deodorant, sunscreen, toothpaste, makeup, body wash, face wash, hair products, skincare. Apply personal care rules ONLY. NEVER use "whole food diet" language. NEVER apply the ORGANIC ABSENCE RULE. NEVER mention ultra-processed food. Swap tips must suggest cleaner personal care alternatives only.
+
+CLEANING PRODUCT: Dish soap, laundry detergent, surface cleaner, bathroom cleaner, bleach, disinfectant, floor cleaner, any household cleaning product. Apply cleaning product rules ONLY. NEVER use "whole food diet" language. NEVER apply the ORGANIC ABSENCE RULE. NEVER mention ultra-processed food. NEVER suggest dietary or food alternatives. Swap tips must suggest cleaner cleaning product alternatives only — like Branch Basics, Seventh Generation, or Force of Nature.
+
+SUPPLEMENT: Pills, capsules, powders taken as supplements. Apply food-adjacent rules but always note these are supplements not whole foods.
+
+The ORGANIC ABSENCE RULE, whole food diet language, enriched flour rules, dairy hormone rules, and sugar/sweetener rules apply ONLY to FOOD PRODUCTS. They must NEVER fire on cleaning products or personal care products. This is non-negotiable.
+
+CRITICAL PARSING RULES — READ THESE FIRST BEFORE ANALYZING ANYTHING:
+1. When you see "Artificial Color (Including X, Y, and Z)"
 1. When you see "Artificial Color (Including X, Y, and Z)" or any bundled phrasing, you MUST extract and flag EACH color individually as its own flag entry. Never treat a bundle as one ingredient.
 2. When you see "Natural and Artificial Flavor" or "Natural and Artificial Flavors" flag it as AVOID — this phrasing means synthetic compounds are confirmed present.
 3. When you see "Vegetable Oil (Sunflower, Canola, and/or Corn Oil)" or any similar bundled oil listing, flag each oil individually.
