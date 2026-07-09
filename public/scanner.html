@@ -269,40 +269,12 @@ fbq('track', 'PageView');
 
   const PRODUCTS = { monthly: 'TWIAP793', annual: 'TWIAP510' };
 
-  // Init
-  (async function init() {
-    // Check localStorage first
-    const localUnlocked = localStorage.getItem('rr_unlocked') === 'true';
-
-    if (localUnlocked) {
-      // Verify the localStorage flag against an actual Twinr purchase check
-      // This prevents stale test data from giving free access forever
-      try {
-        const purchases = await twinr_get_iap_purchases();
-        if (Array.isArray(purchases) && purchases.length > 0) {
-          isSubscriber = true;
-        } else {
-          // localStorage says unlocked but no active purchase found
-          // Clear the stale flag so the paywall works correctly
-          localStorage.removeItem('rr_unlocked');
-          isSubscriber = false;
-        }
-      } catch(e) {
-        // twinr not available in this context — trust localStorage as fallback
-        isSubscriber = true;
-      }
-    } else {
-      // No localStorage flag — do a fresh Twinr check
-      try {
-        const purchases = await twinr_get_iap_purchases();
-        if (Array.isArray(purchases) && purchases.length > 0) {
-          localStorage.setItem('rr_unlocked', 'true');
-          isSubscriber = true;
-        }
-      } catch(e) {
-        isSubscriber = false;
-      }
-    }
+  // Init — simple and safe, never assumes subscriber on error
+  function init() {
+    // Step 1: check localStorage only — no async Twinr call here
+    // The top-of-page script already did the Twinr check and set
+    // rr_unlocked if a purchase was found. We trust that result.
+    isSubscriber = localStorage.getItem('rr_unlocked') === 'true';
 
     const hasFreeScan = localStorage.getItem('rr_free_scan_available') === 'true';
     const freeScanUsed = localStorage.getItem('rr_free_scan_used') === 'true';
@@ -311,7 +283,8 @@ fbq('track', 'PageView');
       document.getElementById('freeScanBanner').style.display = 'block';
     }
 
-    // If free scan already used and not a subscriber, disable scan button immediately
+    // If free scan already used and not a subscriber,
+    // disable the scan button right away on page load
     if (!isSubscriber && freeScanUsed) {
       const scanBtn = document.getElementById('scanBtn');
       scanBtn.disabled = true;
@@ -324,7 +297,9 @@ fbq('track', 'PageView');
     }
 
     try { fbq('track', 'ViewContent', { content_name: isSubscriber ? 'scanner_subscriber' : 'scanner_free_user' }); } catch(e) {}
-  })();
+  }
+
+  init();
 
   // Mode switching
   function setMode(mode) {
@@ -464,7 +439,6 @@ fbq('track', 'PageView');
         isSubscriber = true;
         dismissPaywall();
         document.getElementById('freeScanBanner').style.display = 'none';
-        // Re-enable scan button for new subscriber
         const scanBtn = document.getElementById('scanBtn');
         scanBtn.disabled = false;
         scanBtn.textContent = '🔍 Scan These Ingredients';
@@ -487,14 +461,14 @@ fbq('track', 'PageView');
       const freeScanUsed = localStorage.getItem('rr_free_scan_used') === 'true';
       const freeScanAvailable = localStorage.getItem('rr_free_scan_available') === 'true';
 
-      // If free scan already used, redirect to paywall immediately
+      // If free scan already used, go straight to paywall
       if (freeScanUsed) {
         showPaywall();
         return;
       }
 
-      // If no free scan has been granted yet, grant one now
-      if (!freeScanAvailable && !freeScanUsed) {
+      // If somehow they got here without a free scan granted, grant one now
+      if (!freeScanAvailable) {
         localStorage.setItem('rr_free_scan_available', 'true');
       }
     }
@@ -537,28 +511,27 @@ fbq('track', 'PageView');
       clearInterval(msgInterval);
       renderResults(data);
 
-      // Reset scan button text (it may still say "Scan This Label" from photo mode)
-      btn.innerHTML = '🔍 Scan These Ingredients';
-
       if (!isSubscriber) {
-        // Mark free scan as used BEFORE anything else
+        // Mark free scan as used immediately
         localStorage.setItem('rr_free_scan_used', 'true');
         localStorage.removeItem('rr_free_scan_available');
         document.getElementById('freeScanBanner').style.display = 'none';
 
         // Disable scan button immediately so they cannot scan again
-        // during the 4.5 seconds before the paywall redirect
         btn.disabled = true;
         btn.textContent = '🔒 Subscribe to Scan Again';
 
-        // Scroll to results so they can see them
+        // Scroll to results
         document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         // Redirect to paywall after 4.5 seconds
-        setTimeout(() => showPaywall(), 4500);
+        setTimeout(function() {
+          window.location.href = '/paywall?from=scan';
+        }, 4500);
 
       } else {
         btn.disabled = false;
+        btn.textContent = '🔍 Scan These Ingredients';
         document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
@@ -569,7 +542,7 @@ fbq('track', 'PageView');
       clearInterval(msgInterval);
       results.innerHTML = `<div class="summary-card">Something went wrong — please try again! ${err.message}</div>`;
       btn.disabled = false;
-      btn.innerHTML = '🔍 Scan These Ingredients';
+      btn.textContent = '🔍 Scan These Ingredients';
     }
   }
 
@@ -605,8 +578,8 @@ fbq('track', 'PageView');
           if (sources.length > 0) eduHtml += `<div class="sources-block"><div class="sources-label">📚 Sources</div>${sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}</div>`;
           if (eduHtml) {
             panel.innerHTML = eduHtml;
-            const btn = document.getElementById('btn-' + i);
-            if (btn) btn.style.display = 'inline-flex';
+            const learnBtn = document.getElementById('btn-' + i);
+            if (learnBtn) learnBtn.style.display = 'inline-flex';
           }
         });
       }
@@ -632,7 +605,11 @@ fbq('track', 'PageView');
     const verdictEmoji = verdict === 'PUT IT BACK' ? '⛔' : verdict === 'CAUTION' ? '⚠️' : '✅';
     const flagged = (data.flags || []).filter(f => f.risk !== 'SAFE');
     const safe = (data.flags || []).filter(f => f.risk === 'SAFE');
-    const verdictSubs = { 'PUT IT BACK': 'Okay we need to talk about this one.', 'CAUTION': 'Not the worst, but not the best either.', 'LOOKS CLEAN': 'Yes!! This one actually passed. 🎉' };
+    const verdictSubs = {
+      'PUT IT BACK': 'Okay we need to talk about this one.',
+      'CAUTION': 'Not the worst, but not the best either.',
+      'LOOKS CLEAN': 'Yes!! This one actually passed. 🎉'
+    };
 
     let html = `<div class="verdict-banner ${verdictClass}"><div class="verdict-text">${verdictEmoji} ${verdict}</div><div class="verdict-sub">${verdictSubs[verdict] || ''}</div></div>`;
 
