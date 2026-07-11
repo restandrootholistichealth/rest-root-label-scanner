@@ -420,7 +420,7 @@ dimethyl dicarbonate/DMDC,
 calcium disodium EDTA,
 butane/isobutane/propane as food propellants,
 sodium benzoate when combined with vitamin C,
-citric acid in any processed or packaged product — AVOID. Despite the name the citric acid in virtually all processed products is not from citrus fruit. It is industrially produced using Aspergillus niger mold fermentation. Flag as AVOID and note: "Despite its name, the citric acid in this product is almost certainly not from citrus — it is industrially produced via Aspergillus niger mold fermentation. Many people with mold sensitivities react to it.",
+citric acid in processed or packaged products — CAUTION, not AVOID. Industrially produced citric acid is made via Aspergillus niger mold fermentation, not from citrus fruit. Flag as CAUTION and note: "The citric acid in most packaged products is produced via mold fermentation, not from citrus. People with mold sensitivities may react to it, but it is generally well tolerated by most people." Never rate citric acid as AVOID or PUT IT BACK — it is a CAUTION only.
 sodium triphosphate/sodium tripolyphosphate/STPP — AVOID. Synthetic phosphate additive with no nutritional value. Research links high synthetic phosphate intake to kidney stress and cardiovascular strain. A marker of ultra-processed food,
 disodium phosphate/trisodium phosphate/sodium phosphate — AVOID. Synthetic phosphate additive. Same concerns as sodium triphosphate,
 calcium phosphate in processed food — AVOID. Synthetic form used as an anti-caking agent and stabilizer in ultra-processed foods.
