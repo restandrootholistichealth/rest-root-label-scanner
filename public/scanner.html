@@ -15,11 +15,19 @@
         }
       } catch(e) {}
       if (localStorage.getItem('rr_unlocked') === 'true') return;
-     if (localStorage.getItem('rr_free_scan_available') === 'true') return;
-      if (localStorage.getItem('rr_free_scan_used') === 'true') {
-        window.location.href = '/paywall';
-        return;
-      }
+     if (localStorage.getItem('rr_free_scan_used') === 'true') {
+  window.location.href = '/paywall';
+  return;
+}
+// Also check Twinr persistent storage in case localStorage was cleared
+try {
+  const twinrUsed = await twinr_get_bool_local_data('rr_free_scan_used');
+  if (twinrUsed === true) {
+    localStorage.setItem('rr_free_scan_used', 'true');
+    window.location.href = '/paywall';
+    return;
+  }
+} catch(e) {}
       window.location.href = '/onboarding';
     } catch(e) {
       const params = new URLSearchParams(window.location.search);
@@ -518,9 +526,11 @@ fbq('track', 'PageView');
       renderResults(data);
 
       if (!isSubscriber) {
-        // Mark free scan as used immediately
-        localStorage.setItem('rr_free_scan_used', 'true');
-        localStorage.removeItem('rr_free_scan_available');
+      // Mark free scan as used — use Twinr persistent storage AND localStorage
+localStorage.setItem('rr_free_scan_used', 'true');
+localStorage.removeItem('rr_free_scan_available');
+try { twinr_set_bool_local_data('rr_free_scan_used', true); } catch(e) {}
+try { twinr_set_bool_local_data('rr_free_scan_available', false); } catch(e) {}
         document.getElementById('freeScanBanner').style.display = 'none';
 
         // Disable scan button immediately so they cannot scan again
