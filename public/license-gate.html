@@ -180,7 +180,7 @@
     Then email Lindsay at <a href="mailto:restandrootholistichealing@gmail.com">restandrootholistichealing@gmail.com</a>
     <br><br>
     Don't have the scanner yet?
-    <a href="https://restandroot.samcart.com/products/rest-root-label-scanner" class="purchase-link">Get it here →</a>
+    <a href="https://restandrootholistichealth.systeme.io/87f9a7a0-346d5f81" class="purchase-link">Get it here →</a>
   </div>
 </div>
 
@@ -190,6 +190,16 @@
   window.addEventListener('DOMContentLoaded', () => {
     const unlocked = localStorage.getItem('rr_unlocked');
     if (unlocked === 'true') {
+      window.location.href = '/scanner';
+      return;
+    }
+
+    // Auto-unlock links: ?key=RootScanner2025 skips the manual password
+    // form entirely, e.g. for links emailed straight after purchase.
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get('key');
+    if (key === CORRECT_PASSWORD) {
+      localStorage.setItem('rr_unlocked', 'true');
       window.location.href = '/scanner';
     }
   });

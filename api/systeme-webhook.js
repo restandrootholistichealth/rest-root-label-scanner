@@ -61,7 +61,7 @@ async function sendPasswordEmail(email, name) {
         <div class="key">${SCANNER_PASSWORD}</div>
       </div>
 
-      <a href="https://scanner.restandrootholistic.com" class="button">
+      <a href="https://restandrootholistic.com/license-gate.html?key=${SCANNER_PASSWORD}" class="button">
         Open Your Scanner →
       </a>
 
@@ -136,6 +136,19 @@ export default async function handler(req, res) {
     }
 
     console.log('Systeme.io webhook received:', JSON.stringify(body));
+
+    // This webhook is registered account-wide on "New sale", so it fires for
+    // EVERY product Lindsay sells — not just the Label Scanner. Guard against
+    // emailing the scanner password to buyers of other products by checking
+    // whether "Label Scanner" appears anywhere in the payload (the digital
+    // product is named "Rest & Root Label Scanner" and its price plans are
+    // "Label Scanner - Monthly" / "Label Scanner - Annual", so this should
+    // catch it regardless of which exact field systeme.io puts the name in).
+    const payloadText = JSON.stringify(body).toLowerCase();
+    if (!payloadText.includes('label scanner')) {
+      console.log('Sale is not for the Label Scanner — skipping password email.');
+      return res.status(200).json({ success: true, message: 'Not a Label Scanner sale — skipped' });
+    }
 
     // Systeme.io payload shapes vary by trigger type — check several
     // common paths. If none match, the full payload is in the log above
