@@ -833,7 +833,7 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
   </div>
 
   <button class="restore-btn" onclick="restorePurchases()">
-    Already subscribed? Restore Purchases
+    Already subscribed? Log In
   </button>
 
   <div class="footer-links">
@@ -846,7 +846,7 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 <div class="disclaimer">
   For educational purposes only. Not medical advice.<br>
   Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period.<br>
-  Manage subscriptions in your App Store account settings.
+  Manage or cancel your subscription anytime by emailing lindsay@restandrootholistic.com.
 </div>
 
 <div class="error-toast" id="errorToast"></div>
@@ -937,29 +937,14 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     const btn = document.getElementById('cta-btn');
     btn.innerHTML = '<span class="loading"></span>Loading...';
     btn.disabled = true;
-    const productId = PRODUCTS[selectedPlan];
 
-    // Fire the purchase
-    window.location.href = `inapppurchase://twinr.dev?product_id=${productId}`;
-    if (window.TwinrBridge) window.TwinrBridge.purchase(productId);
-
-    // Reset button after 5 seconds in case nothing happens
-    setTimeout(() => {
-      btn.innerHTML = 'Start Scanning Free →';
-      btn.disabled = false;
-    }, 5000);
+    // Send to the real web checkout (native in-app purchase no longer applies)
+    window.location.href = 'https://restandrootholistichealth.systeme.io/87f9a7a0-346d5f81';
   }
 
   function restorePurchases() {
-    showSuccess('Checking for previous purchases...');
-    window.location.href = 'inapppurchase://twinr.dev?restore=true';
-    if (window.TwinrBridge) window.TwinrBridge.restorePurchases();
-    setTimeout(async () => {
-      try {
-        const purchases = await twinr_get_iap_purchases();
-        if (Array.isArray(purchases) && purchases.length > 0) goToScanner();
-      } catch(e) {}
-    }, 3000);
+    // Already purchased — send to the login/unlock page
+    window.location.href = '/license-gate.html';
   }
 
   function showError(message) {
