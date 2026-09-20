@@ -9,6 +9,7 @@
     { "src": "public/**", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/nontoxicresources", "status": 302, "headers": { "Location": "https://restandrootholistichealth.systeme.io/87f9a7a0-346d5f81?sa=sa028194674067fb1d5d12e565da24be6c9bf1cc71" } },
     { "src": "/api/twinr-purchase", "dest": "/api/twinr-purchase.js" },
     { "src": "/api/samcart-webhook", "dest": "/api/samcart-webhook.js" },
     { "src": "/api/verify-license", "dest": "/api/verify-license.js" },
