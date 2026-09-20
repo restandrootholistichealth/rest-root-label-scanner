@@ -109,6 +109,17 @@ async function sendPasswordEmail(email, name) {
       subject: '🌿 Your Rest & Root Label Scanner is ready!',
       html: emailHtml,
     });
+
+    // resend.emails.send() does NOT throw on a rejected send — it resolves
+    // with { data: null, error: {...} }. Treating any resolved promise as
+    // success (the old behavior) silently swallowed real failures, e.g. a
+    // 403 "domain not verified" error. Check result.error explicitly.
+    if (result?.error) {
+      console.error('=== EMAIL SEND FAILED ===');
+      console.error('Resend error:', JSON.stringify(result.error));
+      throw new Error(result.error.message || 'Resend returned an error');
+    }
+
     console.log('=== EMAIL SENT SUCCESSFULLY ===');
     console.log('Result:', JSON.stringify(result));
     return result;
@@ -162,6 +173,7 @@ export default async function handler(req, res) {
       null;
 
     const name =
+      body?.customer?.fields?.first_name ||
       body?.data?.contact?.fields?.first_name ||
       body?.contact?.fields?.first_name ||
       body?.data?.contact?.first_name ||
