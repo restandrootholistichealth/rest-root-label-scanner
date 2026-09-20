@@ -2,7 +2,7 @@
   "name": "Rest & Root Label Scanner",
   "short_name": "Label Scanner",
   "description": "AI-powered ingredient analyzer for clean living",
-  "start_url": "/",
+  "start_url": "/scanner",
   "display": "standalone",
   "background_color": "#FAF6F0",
   "theme_color": "#5C3D2E",
