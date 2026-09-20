@@ -5,9 +5,8 @@
   (async function() {
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('key') === 'RootScanner2025') { localStorage.setItem('rr_unlocked', 'true'); return; }
-      try {
-        const purchases = await twinr_get_iap_purchases();
+    try {
+      const purchases = await twinr_get_iap_purchases();
         if (Array.isArray(purchases) && purchases.length > 0) {
           localStorage.setItem('rr_unlocked', 'true');
           try { twinr_set_bool_local_data('rr_unlocked', true); } catch(e) {}
@@ -15,23 +14,22 @@
         }
       } catch(e) {}
       if (localStorage.getItem('rr_unlocked') === 'true') return;
-     if (localStorage.getItem('rr_free_scan_used') === 'true') {
-  window.location.href = '/paywall';
-  return;
-}
-// Also check Twinr persistent storage in case localStorage was cleared
-try {
-  const twinrUsed = await twinr_get_bool_local_data('rr_free_scan_used');
-  if (twinrUsed === true) {
-    localStorage.setItem('rr_free_scan_used', 'true');
-    window.location.href = '/paywall';
-    return;
-  }
-} catch(e) {}
+      if (localStorage.getItem('rr_free_scan_available') === 'true') return;
+      if (localStorage.getItem('rr_free_scan_used') === 'true') {
+        window.location.href = '/paywall';
+        return;
+      }
+      // Check Twinr persistent storage in case localStorage was cleared on app close
+      try {
+        const twinrUsed = await twinr_get_bool_local_data('rr_free_scan_used');
+        if (twinrUsed === true) {
+          localStorage.setItem('rr_free_scan_used', 'true');
+          window.location.href = '/paywall';
+          return;
+        }
+      } catch(e) {}
       window.location.href = '/onboarding';
     } catch(e) {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('key') === 'RootScanner2025') { localStorage.setItem('rr_unlocked', 'true'); return; }
       if (localStorage.getItem('rr_unlocked') === 'true') return;
       if (localStorage.getItem('rr_free_scan_available') === 'true') return;
       if (localStorage.getItem('rr_free_scan_used') === 'true') {
@@ -183,7 +181,6 @@ fbq('track', 'PageView');
   .paywall-trust { text-align: center; font-size: 11px; color: var(--warm-brown); margin-bottom: 16px; }
   .paywall-no-thanks { width: 100%; background: none; border: none; color: var(--warm-brown); font-size: 13px; cursor: pointer; font-family: inherit; padding: 8px; text-decoration: underline; }
 </style>
-<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
@@ -209,14 +206,14 @@ fbq('track', 'PageView');
         <div class="paywall-plan-badge">Best Value</div>
         <div class="paywall-plan-header">
           <div class="paywall-plan-name">Annual Access</div>
-          <div><div class="paywall-plan-price">$120</div><div class="paywall-plan-period">/year</div></div>
+          <div><div class="paywall-plan-price">$23.99</div><div class="paywall-plan-period">/year</div></div>
         </div>
-        <div class="paywall-plan-detail">Just $10/month — less than a coffee a month ☕</div>
+        <div class="paywall-plan-detail">Just $2/month — save 33% vs monthly ☕</div>
       </button>
       <button class="paywall-plan" id="pw-monthly" onclick="selectPaywallPlan('monthly')" type="button">
         <div class="paywall-plan-header">
           <div class="paywall-plan-name">Monthly Access</div>
-          <div><div class="paywall-plan-price">$12.99</div><div class="paywall-plan-period">/month</div></div>
+          <div><div class="paywall-plan-price">$2.99</div><div class="paywall-plan-period">/month</div></div>
         </div>
         <div class="paywall-plan-detail secondary">Flexible — cancel anytime</div>
       </button>
@@ -284,13 +281,8 @@ fbq('track', 'PageView');
 
   const PRODUCTS = { monthly: 'TWIAP793', annual: 'TWIAP510' };
 
-  // Init — simple and safe, never assumes subscriber on error
   function init() {
-    // Step 1: check localStorage only — no async Twinr call here
-    // The top-of-page script already did the Twinr check and set
-    // rr_unlocked if a purchase was found. We trust that result.
     isSubscriber = localStorage.getItem('rr_unlocked') === 'true';
-
     const hasFreeScan = localStorage.getItem('rr_free_scan_available') === 'true';
     const freeScanUsed = localStorage.getItem('rr_free_scan_used') === 'true';
 
@@ -298,8 +290,6 @@ fbq('track', 'PageView');
       document.getElementById('freeScanBanner').style.display = 'block';
     }
 
-    // If free scan already used and not a subscriber,
-    // disable the scan button right away on page load
     if (!isSubscriber && freeScanUsed) {
       const scanBtn = document.getElementById('scanBtn');
       scanBtn.disabled = true;
@@ -316,7 +306,6 @@ fbq('track', 'PageView');
 
   init();
 
-  // Mode switching
   function setMode(mode) {
     currentMode = mode;
     document.getElementById('photo-mode').style.display = mode === 'photo' ? 'block' : 'none';
@@ -329,7 +318,6 @@ fbq('track', 'PageView');
     }
   }
 
-  // Photo handling
   function handlePhoto(input) {
     const file = input.files[0];
     if (!file) return;
@@ -362,7 +350,6 @@ fbq('track', 'PageView');
     setMode('text');
   }
 
-  // Paywall functions
   function selectPaywallPlan(plan) {
     paywallPlan = plan;
     const annual = document.getElementById('pw-annual');
@@ -396,9 +383,7 @@ fbq('track', 'PageView');
         <div style="font-size:11px;color:#8B6F5C;">7-day free trial · Cancel anytime</div>
       </div>
     `;
-    document.getElementById('readyBtn').addEventListener('click', function() {
-      restorePaywall();
-    });
+    document.getElementById('readyBtn').addEventListener('click', function() { restorePaywall(); });
   }
 
   function restorePaywall() {
@@ -412,14 +397,14 @@ fbq('track', 'PageView');
           <div class="paywall-plan-badge">Best Value</div>
           <div class="paywall-plan-header">
             <div class="paywall-plan-name">Annual Access</div>
-            <div><div class="paywall-plan-price">$120</div><div class="paywall-plan-period">/year</div></div>
+            <div><div class="paywall-plan-price">$23.99</div><div class="paywall-plan-period">/year</div></div>
           </div>
-          <div class="paywall-plan-detail">Just $10/month — less than a coffee a month ☕</div>
+          <div class="paywall-plan-detail">Just $2/month — save 33% vs monthly ☕</div>
         </button>
         <button class="paywall-plan" id="pw-monthly" type="button">
           <div class="paywall-plan-header">
             <div class="paywall-plan-name">Monthly Access</div>
-            <div><div class="paywall-plan-price">$12.99</div><div class="paywall-plan-period">/month</div></div>
+            <div><div class="paywall-plan-price">$2.99</div><div class="paywall-plan-period">/month</div></div>
           </div>
           <div class="paywall-plan-detail secondary">Flexible — cancel anytime</div>
         </button>
@@ -451,6 +436,8 @@ fbq('track', 'PageView');
         localStorage.setItem('rr_unlocked', 'true');
         localStorage.removeItem('rr_free_scan_available');
         localStorage.removeItem('rr_free_scan_used');
+        try { twinr_set_bool_local_data('rr_unlocked', true); } catch(e) {}
+        try { twinr_set_bool_local_data('rr_free_scan_used', false); } catch(e) {}
         isSubscriber = true;
         dismissPaywall();
         document.getElementById('freeScanBanner').style.display = 'none';
@@ -462,30 +449,19 @@ fbq('track', 'PageView');
     } catch(e) {}
   });
 
-  // PWA
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
   if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => {}); }
 
-  // Main scan function
   async function scan() {
     const btn = document.getElementById('scanBtn');
     const results = document.getElementById('results');
 
-    // Gate: check free scan status
     if (!isSubscriber) {
       const freeScanUsed = localStorage.getItem('rr_free_scan_used') === 'true';
       const freeScanAvailable = localStorage.getItem('rr_free_scan_available') === 'true';
 
-      // If free scan already used, go straight to paywall
-      if (freeScanUsed) {
-        showPaywall();
-        return;
-      }
-
-      // If somehow they got here without a free scan granted, grant one now
-      if (!freeScanAvailable) {
-        localStorage.setItem('rr_free_scan_available', 'true');
-      }
+      if (freeScanUsed) { showPaywall(); return; }
+      if (!freeScanAvailable) { localStorage.setItem('rr_free_scan_available', 'true'); }
     }
 
     if (currentMode === 'photo' && !photoData) {
@@ -527,21 +503,18 @@ fbq('track', 'PageView');
       renderResults(data);
 
       if (!isSubscriber) {
-      // Mark free scan as used — use Twinr persistent storage AND localStorage
-localStorage.setItem('rr_free_scan_used', 'true');
-localStorage.removeItem('rr_free_scan_available');
-try { twinr_set_bool_local_data('rr_free_scan_used', true); } catch(e) {}
-try { twinr_set_bool_local_data('rr_free_scan_available', false); } catch(e) {}
+        // Mark free scan as used in BOTH localStorage AND Twinr persistent storage
+        localStorage.setItem('rr_free_scan_used', 'true');
+        localStorage.removeItem('rr_free_scan_available');
+        try { twinr_set_bool_local_data('rr_free_scan_used', true); } catch(e) {}
+        try { twinr_set_bool_local_data('rr_free_scan_available', false); } catch(e) {}
         document.getElementById('freeScanBanner').style.display = 'none';
 
-        // Disable scan button immediately so they cannot scan again
         btn.disabled = true;
         btn.textContent = '🔒 Subscribe to Scan Again';
 
-        // Scroll to results
         document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-        // Redirect to paywall after 4.5 seconds
         setTimeout(function() {
           window.location.href = '/paywall?from=scan';
         }, 4500);
@@ -629,7 +602,6 @@ try { twinr_set_bool_local_data('rr_free_scan_available', false); } catch(e) {}
     };
 
     let html = `<div class="verdict-banner ${verdictClass}"><div class="verdict-text">${verdictEmoji} ${verdict}</div><div class="verdict-sub">${verdictSubs[verdict] || ''}</div></div>`;
-
     if (data.extracted_ingredients) html += `<div class="extracted-box"><strong>Ingredients found in photo</strong>${data.extracted_ingredients}</div>`;
 
     if (verdict === 'LOOKS CLEAN') {
@@ -707,7 +679,7 @@ try { twinr_set_bool_local_data('rr_free_scan_available', false); } catch(e) {}
     if (verdict === 'PUT IT BACK') {
       shareText = `okay I need you to scan your products RIGHT NOW because I just did and 😳\n\n`;
       flagged.slice(0,3).forEach(f => { shareText += `🔴 ${f.name} — ${f.reason}\n`; });
-      shareText += `\nI've been using this not knowing what was in it. My crunchy bestie app just told me the truth.\n\nrestandrootholistic.com\n\n@restandrootholistichealth\n#KnowWhatsInIt #RestAndRoot #PutItBack #ToxinFree`;
+      shareText += `\nI've been using this not knowing what was in it.\n\nrestandrootholistic.com\n\n@restandrootholistichealth\n#KnowWhatsInIt #RestAndRoot #PutItBack #ToxinFree`;
     } else if (verdict === 'CAUTION') {
       shareText = `not the worst but not the best 👀 I scanned something and got a CAUTION\n\n`;
       flagged.slice(0,2).forEach(f => { shareText += `⚠️ ${f.name} — ${f.reason}\n`; });

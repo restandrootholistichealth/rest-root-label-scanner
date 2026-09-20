@@ -677,7 +677,6 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
   .checking-overlay .leaf { font-size: 44px; }
   .checking-overlay p { font-size: 14px; color: var(--warm-brown); }
 </style>
-<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
@@ -763,7 +762,7 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
         <div class="compare-item" style="color:var(--deep-sage);">Know what's in everything. Forever.</div>
         <div class="compare-sub">Unlimited scans. Every product. Every time.</div>
       </div>
-      <div class="compare-price highlight-price">$12.99<span style="font-size:11px;font-weight:400;color:var(--warm-brown);">/mo</span></div>
+      <div class="compare-price highlight-price">$2.99<span style="font-size:11px;font-weight:400;color:var(--warm-brown);">/mo</span></div>
     </div>
   </div>
   <div class="compare-caption">The scanner costs <strong>less than the problem it solves.</strong> 🌿</div>
@@ -783,11 +782,11 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
           <div class="card-name">Annual Access</div>
         </div>
         <div class="card-price">
-          <div class="price-amount">$120</div>
+          <div class="price-amount">$23.99</div>
           <div class="price-period">/year</div>
         </div>
       </div>
-      <div class="card-detail savings">Just $10/month — save 23% vs monthly</div>
+      <div class="card-detail savings">Just $2/month — save 33% vs monthly</div>
     </div>
 
     <div class="pricing-card" id="monthly-card" onclick="selectPlan('monthly')">
@@ -797,7 +796,7 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
           <div class="card-name">Monthly Access</div>
         </div>
         <div class="card-price">
-          <div class="price-amount">$12.99</div>
+          <div class="price-amount">$2.99</div>
           <div class="price-period">/month</div>
         </div>
       </div>
@@ -837,15 +836,6 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
     Already subscribed? Restore Purchases
   </button>
 
-  <div class="promo-section">
-    <button class="promo-toggle" onclick="togglePromo()">Have a promo code? 🌿</button>
-    <div class="promo-input-wrap" id="promoWrap" style="display:none;">
-      <input type="text" id="promoInput" placeholder="Enter promo code" autocomplete="off" autocapitalize="characters" spellcheck="false"/>
-      <button class="promo-apply-btn" onclick="applyPromoCode()">Apply</button>
-    </div>
-    <div class="promo-message" id="promoMessage"></div>
-  </div>
-
   <div class="footer-links">
     <button class="footer-link" onclick="window.open('https://restandrootholistic.com','_blank')">Privacy Policy</button>
     <button class="footer-link" onclick="window.open('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/','_blank')">Terms of Use</button>
@@ -856,7 +846,7 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
 <div class="disclaimer">
   For educational purposes only. Not medical advice.<br>
   Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period.<br>
-  Manage subscriptions in your App Store or Google Play account settings.
+  Manage subscriptions in your App Store account settings.
 </div>
 
 <div class="error-toast" id="errorToast"></div>
@@ -970,30 +960,6 @@ src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"
         if (Array.isArray(purchases) && purchases.length > 0) goToScanner();
       } catch(e) {}
     }, 3000);
-  }
-
-  function togglePromo() {
-    const wrap = document.getElementById('promoWrap');
-    wrap.style.display = wrap.style.display === 'none' ? 'flex' : 'none';
-    if (wrap.style.display === 'flex') document.getElementById('promoInput').focus();
-  }
-
-  function applyPromoCode() {
-    const input = document.getElementById('promoInput');
-    const code = input.value.trim().toUpperCase();
-    const msg = document.getElementById('promoMessage');
-    if (!code) {
-      msg.textContent = 'Please enter a promo code.';
-      msg.className = 'promo-message error';
-      return;
-    }
-    msg.textContent = 'Applying...';
-    msg.className = 'promo-message';
-    window.location.href = `inapppurchase://twinr.dev?promo_code=${code}`;
-    setTimeout(() => {
-      msg.textContent = 'If your code is valid, follow the prompts to complete redemption.';
-      msg.className = 'promo-message success';
-    }, 2000);
   }
 
   function showError(message) {

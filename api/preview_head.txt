@@ -1,0 +1,16 @@
+import crypto from 'crypto';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const SCANNER_PASSWORD = 'RootScanner2025';
+
+async function sendPasswordEmail(email, name) {
+  const firstName = name ? name.split(' ')[0] : 'there';
+
+  const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, 
