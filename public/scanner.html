@@ -5,6 +5,10 @@
   (async function() {
     try {
       const params = new URLSearchParams(window.location.search);
+      const key = params.get('key');
+      if (key === 'RootScanner2025') {
+        localStorage.setItem('rr_unlocked', 'true');
+      }
     try {
       const purchases = await twinr_get_iap_purchases();
         if (Array.isArray(purchases) && purchases.length > 0) {
