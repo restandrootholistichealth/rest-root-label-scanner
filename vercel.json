@@ -14,6 +14,7 @@
     { "src": "/carlee", "status": 302, "headers": { "Location": "https://restandrootholistichealth.systeme.io/87f9a7a0-346d5f81?sa=sa0278232887561ec031002910c6f76c1f02d82ccf" } },
     { "src": "/megan", "status": 302, "headers": { "Location": "https://restandrootholistichealth.systeme.io/87f9a7a0-346d5f81?sa=sa0281958205832dfc14fb74de131ad5f47bf33874" } },
     { "src": "/brooke", "status": 302, "headers": { "Location": "https://restandrootholistichealth.systeme.io/87f9a7a0-346d5f81?sa=sa02820368257b38f252c43f5725f6a4a8edbbed14" } },
+    { "src": "/naturalhealthnetwork", "status": 302, "headers": { "Location": "https://restandrootholistichealth.systeme.io/87f9a7a0-346d5f81?sa=sa01638521731156bf394df22d6a213b62a4f35156" } },
     { "src": "/api/twinr-purchase", "dest": "/api/twinr-purchase.js" },
     { "src": "/api/samcart-webhook", "dest": "/api/samcart-webhook.js" },
     { "src": "/api/systeme-webhook", "dest": "/api/systeme-webhook.js" },
