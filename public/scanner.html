@@ -109,6 +109,35 @@ fbq('track', 'PageView');
   .verdict-banner.safe { background: var(--deep-sage); color: white; }
   .verdict-banner .verdict-text { font-size: 20px; font-weight: 700; letter-spacing: 2px; margin-bottom: 4px; }
   .verdict-banner .verdict-sub { font-size: 12px; opacity: 0.85; }
+  .glance { border-radius: 14px; padding: 18px; margin-bottom: 16px; background: white; border: 2px solid var(--deep-sage); }
+  .glance.fine { border-color: var(--sage); }
+  .glance.caution { border-color: var(--yellow); }
+  .glance.danger { border-color: var(--red); }
+  .glance-top { display: flex; align-items: center; gap: 16px; }
+  .score-ring { flex: 0 0 auto; width: 72px; height: 72px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; background: var(--deep-sage); }
+  .glance.fine .score-ring { background: var(--sage); }
+  .glance.caution .score-ring { background: var(--yellow); }
+  .glance.danger .score-ring { background: var(--red); }
+  .score-num { font-size: 26px; font-weight: 800; line-height: 1; }
+  .score-of { font-size: 10px; opacity: 0.85; margin-top: 2px; }
+  .tier-label { font-size: 19px; font-weight: 700; color: var(--brown); margin-bottom: 4px; }
+  .quick-take { font-size: 14px; color: #5a4a3a; line-height: 1.5; }
+  .top-concerns { list-style: none; padding: 0; margin: 14px 0 0; border-top: 1px solid #F0EBE6; padding-top: 12px; }
+  .top-concerns li { font-size: 13px; color: #5a4a3a; line-height: 1.5; margin-bottom: 6px; padding-left: 18px; position: relative; }
+  .top-concerns li::before { content: ''; position: absolute; left: 2px; top: 7px; width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); }
+  .top-concerns li.avoid::before { background: var(--red); }
+  .calm-note { font-size: 12px; color: var(--deep-sage); font-style: italic; margin-top: 10px; line-height: 1.5; }
+  .swap-card { background: white; border: 1px solid #e8e0d8; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .swap-card .swap-tip, .swap-card .diy-tip { margin-top: 0; margin-bottom: 8px; }
+  .find-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .find-btn { flex: 1 1 120px; text-align: center; text-decoration: none; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--sage); color: var(--deep-sage); font-size: 13px; font-weight: 600; background: var(--light-sage); }
+  .who-card { background: #FFF8F0; border: 1px solid #E8D5C4; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .who-text { font-size: 13px; color: #6a5a4a; line-height: 1.6; }
+  .htma-cta { font-size: 13px; color: var(--brown); line-height: 1.6; margin-top: 10px; padding-top: 10px; border-top: 1px solid #E8D5C4; }
+  .htma-cta a { color: var(--deep-sage); font-weight: 700; }
+  .details-toggle { width: 100%; padding: 12px; background: none; border: 1px dashed #C9BBAD; border-radius: 10px; color: var(--brown); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; margin-bottom: 12px; }
+  .full-details { display: none; }
+  .full-details.open { display: block; }
   .summary-card { background: white; border: 1px solid #e8e0d8; border-radius: 10px; padding: 16px; margin-bottom: 16px; font-size: 14px; line-height: 1.7; color: var(--brown); }
   .swap-tip { background: var(--light-sage); border-left: 3px solid var(--sage); border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13px; color: var(--deep-sage); margin-top: 10px; font-weight: 500; }
   .diy-tip { background: #F0F7F0; border-left: 3px solid var(--deep-sage); border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13px; color: var(--deep-sage); margin-top: 8px; line-height: 1.5; }
@@ -592,6 +621,14 @@ fbq('track', 'PageView');
     }
   }
 
+  function toggleDetails() {
+    const d = document.getElementById('full-details');
+    const b = document.getElementById('details-toggle');
+    if (!d || !b) return;
+    const open = d.classList.toggle('open');
+    b.textContent = open ? 'Hide the full breakdown ▴' : 'See the full breakdown ▾';
+  }
+
   function renderResults(data) {
     lastScanData = data;
     const verdict = data.verdict;
@@ -605,26 +642,63 @@ fbq('track', 'PageView');
       'LOOKS CLEAN': 'Yes!! This one actually passed. 🎉'
     };
 
-    let html = `<div class="verdict-banner ${verdictClass}"><div class="verdict-text">${verdictEmoji} ${verdict}</div><div class="verdict-sub">${verdictSubs[verdict] || ''}</div></div>`;
-    if (data.extracted_ingredients) html += `<div class="extracted-box"><strong>Ingredients found in photo</strong>${data.extracted_ingredients}</div>`;
+    const hasScore = typeof data.score === 'number';
+    let html = '';
+    if (hasScore) {
+      const s = data.score;
+      const tierClass = s >= 80 ? 'safe' : s >= 60 ? 'fine' : s >= 40 ? 'caution' : 'danger';
+      const top = flagged.slice().sort((a, b) => (a.risk === 'AVOID' ? 0 : 1) - (b.risk === 'AVOID' ? 0 : 1)).slice(0, 3);
+      const calmNotes = {
+        leave_on: 'You use this every day, so it is worth swapping first. You do not need a perfect score — just better everyday picks.',
+        ingested: 'What you eat often matters most. An occasional treat is fine — swap the everyday staples first.',
+        rinse_off: 'This rinses off, so it matters less than lotions or food. Swap it when it runs out.',
+        household: 'Open a window and wear gloves while you finish it, then try a cleaner option next time.'
+      };
+      html += `<div class="glance ${tierClass}"><div class="glance-top"><div class="score-ring"><span class="score-num">${s}</span><span class="score-of">/ 100</span></div><div><div class="tier-label">${data.tier}</div><div class="quick-take">${data.quick_take || verdictSubs[verdict] || ''}</div></div></div>`;
+      if (top.length > 0) html += `<ul class="top-concerns">${top.map(f => `<li class="${f.risk === 'AVOID' ? 'avoid' : ''}"><strong>${f.name}</strong> — ${f.reason}</li>`).join('')}</ul>`;
+      if (s < 80 && calmNotes[data.exposure]) html += `<div class="calm-note">${calmNotes[data.exposure]}</div>`;
+      html += `</div>`;
+    } else {
+      html += `<div class="verdict-banner ${verdictClass}"><div class="verdict-text">${verdictEmoji} ${verdict}</div><div class="verdict-sub">${verdictSubs[verdict] || ''}</div></div>`;
+    }
+
+    // Dangerous combinations (like bleach + ammonia) always stay visible
+    const combos = data.combination_warnings || [];
+    const comboCard = combo => {
+      const isDanger = combo.severity === 'DANGER';
+      return `<div class="combination-card ${isDanger ? 'danger' : ''}"><div class="combination-icon">${isDanger ? '🚨' : '⚗️'}</div><div class="combination-content"><div class="combination-text">${combo.warning}</div>${combo.sources && combo.sources.length > 0 ? `<div class="sources-block" style="margin-top:8px;"><div class="sources-label">📚 Sources</div>${combo.sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}</div>` : ''}</div></div>`;
+    };
+    combos.filter(c => c.severity === 'DANGER').forEach(c => { html += comboCard(c); });
 
     if (verdict === 'LOOKS CLEAN') {
       html += `<div class="clean-celebration"><div class="clean-confetti">🎉✨🌿✨🎉</div><div class="clean-headline">You found a good one!</div><div class="clean-body">${data.summary}</div><div class="clean-encouragement">You're making better choices than you probably even realize. Every clean product is a win. Keep this one in your rotation. 🌿</div>${data.swap_tip ? `<div class="swap-tip">💡 ${data.swap_tip}</div>` : ''}</div>`;
-    } else {
-      html += `<div class="summary-card">${data.summary}`;
+    } else if (data.diy_recipe || data.swap_tip) {
+      html += `<div class="section-title">Better swaps</div><div class="swap-card">`;
+      if (data.diy_recipe) html += `<div class="diy-tip">🌿 <strong>Make it yourself (cheapest):</strong> ${data.diy_recipe}</div>`;
       if (data.swap_tip) html += `<div class="swap-tip">💡 ${data.swap_tip}</div>`;
-      if (data.diy_recipe) html += `<div class="diy-tip">🌿 <strong>Make it yourself:</strong> ${data.diy_recipe}</div>`;
+      if (data.swap_search) {
+        const q = encodeURIComponent(data.swap_search);
+        html += `<div class="find-row"><a class="find-btn" href="https://www.target.com/s?searchTerm=${q}" target="_blank" rel="noopener">🛒 Find it at Target</a><a class="find-btn" href="https://www.amazon.com/s?k=${q}" target="_blank" rel="noopener">📦 Find it on Amazon</a></div>`;
+      }
       html += `</div>`;
     }
 
+    if (data.who_should_care && verdict !== 'LOOKS CLEAN') {
+      html += `<div class="who-card"><div class="symptom-title">👀 Who should pay closer attention</div><div class="who-text">${data.who_should_care}</div><div class="htma-cta">Not sure how your body handles this stuff? An HTMA test shows your mineral patterns and how your body is coping with stress. <a href="mailto:lindsay@restandrootholistic.com?subject=HTMA%20Test%20Question">Ask Lindsay about HTMA →</a></div></div>`;
+    }
+
+    const collapse = hasScore && verdict !== 'LOOKS CLEAN';
+    if (collapse) html += `<button class="details-toggle" id="details-toggle" onclick="toggleDetails()">See the full breakdown ▾</button>`;
+    html += `<div class="full-details ${collapse ? '' : 'open'}" id="full-details">`;
+    if (data.extracted_ingredients) html += `<div class="extracted-box"><strong>Ingredients found in photo</strong>${data.extracted_ingredients}</div>`;
+    if (verdict !== 'LOOKS CLEAN') html += `<div class="summary-card">${data.summary}</div>`;
+
     html += `<div class="symptom-card" id="symptom-card" style="display:none;"></div>`;
 
-    if (data.combination_warnings && data.combination_warnings.length > 0) {
+    const cautionCombos = combos.filter(c => c.severity !== 'DANGER');
+    if (cautionCombos.length > 0) {
       html += `<div class="section-title">⚗️ Chemical combination alerts</div>`;
-      data.combination_warnings.forEach(combo => {
-        const isDanger = combo.severity === 'DANGER';
-        html += `<div class="combination-card ${isDanger ? 'danger' : ''}"><div class="combination-icon">${isDanger ? '🚨' : '⚗️'}</div><div class="combination-content"><div class="combination-text">${combo.warning}</div>${combo.sources && combo.sources.length > 0 ? `<div class="sources-block" style="margin-top:8px;"><div class="sources-label">📚 Sources</div>${combo.sources.map(s => `<a class="source-link" href="${s.url}" target="_blank" rel="noopener">· ${s.name}</a>`).join('')}</div>` : ''}</div></div>`;
-      });
+      cautionCombos.forEach(c => { html += comboCard(c); });
     }
 
     if (flagged.length > 0) {
@@ -643,6 +717,8 @@ fbq('track', 'PageView');
     if (flagged.length === 0 && verdict === 'LOOKS CLEAN') {
       html += `<div class="flag-card safe"><div class="flag-reason">No red flag ingredients detected — this one's a keeper! 🌿</div></div>`;
     }
+
+    html += `</div>`;
 
     const shareLabels = { 'PUT IT BACK': '😳 Share This Scan', 'CAUTION': '👀 Share This Scan', 'LOOKS CLEAN': '🎉 Share This Win' };
     html += `<button class="share-btn" onclick="shareResult()">${shareLabels[verdict] || '📲 Share This Scan'}</button><button class="share-btn-fb" onclick="saveForFacebook()">💾 Save for Facebook</button><div class="share-caption">${verdict === 'LOOKS CLEAN' ? 'Show your people what clean actually looks like 🌿' : 'Your people need to know about this 🌿'}</div>`;

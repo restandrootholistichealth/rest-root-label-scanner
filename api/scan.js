@@ -259,6 +259,24 @@ function detectCombinations(flags) {
   return warnings;
 }
 
+// Steady 0-100 score computed from the flags (not by the AI) so the same
+// product always gets the same number. Everyday exposure counts more than
+// rinse-off or household use. Any AVOID caps the score below "Great pick";
+// a dangerous chemical combination caps it at "Put it back".
+function computeScore(flags, combinations, exposure) {
+  const avoid = flags.filter(f => f.risk === 'AVOID').length;
+  const caution = flags.filter(f => f.risk === 'CAUTION').length;
+  const dangerCombos = combinations.filter(c => c.severity === 'DANGER').length;
+  const cautionCombos = combinations.length - dangerCombos;
+  const weight = (exposure === 'rinse_off' || exposure === 'household') ? 0.75 : 1;
+  let score = Math.round(100 - (avoid * 12 + caution * 4) * weight - cautionCombos * 5 - dangerCombos * 25);
+  if (avoid > 0) score = Math.min(score, 69);
+  if (dangerCombos > 0) score = Math.min(score, 30);
+  score = Math.max(5, Math.min(100, score));
+  const tier = score >= 80 ? 'Great pick' : score >= 60 ? 'Fine for now' : score >= 40 ? 'Swap when you can' : 'Put it back';
+  return { score, tier };
+}
+
 function getSourcesForIngredient(name) {
   const n = name.toLowerCase();
   if (n.includes('paraben')) return VERIFIED_SOURCES.parabens;
@@ -320,6 +338,10 @@ JSON format:
 {
   "extracted_ingredients": "comma separated ingredients from photo (photo scans only, else empty string)",
   "summary": "2-3 warm plain English sentences about the product overall. Do NOT include swap suggestions or DIY recipes in the summary — those go in swap_tip and diy_recipe fields only.",
+  "quick_take": "ONE short, calm sentence (15 words max) a shopper can read in the store aisle. Lead with the single most useful takeaway. No fear language, no exclamation marks.",
+  "exposure": "Exactly one of: leave_on (lotion, deodorant, makeup, serum, sunscreen), rinse_off (shampoo, body wash, soap, toothpaste), ingested (food, drink, supplement), household (cleaning or laundry products)",
+  "who_should_care": "1-2 everyday-language sentences naming who should pay closer attention to THIS product's concerns (for example: pregnant or trying to conceive, babies and young kids, people with hormone or thyroid issues, very sensitive skin, people who react to mold). NEVER use clinical jargon like 'compromised detox pathways' or 'impaired methylation' — describe it in words anyone understands. Empty string if the product is clean.",
+  "swap_search": "A 2-5 word store search phrase for a cleaner version of this product, for example 'fragrance free body lotion' or 'organic mac and cheese'. Empty string if the product is clean.",
   "swap_tip": "One sentence recommending a specific clean product to swap to. No DIY here — just a product recommendation. Empty string if product is clean.",
   "diy_recipe": "ONLY if a simple DIY version exists AND it is meaningfully better than buying clean. Exact recipe with measurements. Empty string if no good DIY exists OR if you already gave a product swap. Never duplicate what is in swap_tip.",
   "flags": [
@@ -500,6 +522,8 @@ NOTE ON BUNDLED INGREDIENTS: Always parse bundled ingredient lists completely. "
 
 NOTE ON CITRIC ACID: In virtually all processed and packaged products citric acid is synthetically produced via Aspergillus niger mold fermentation not from citrus fruit. Always flag as AVOID in processed products and explain this clearly. Only rate as SAFE if the product is a whole fresh citrus item where citric acid is naturally occurring.
 
+TONE RULE — INFORMED, NOT AFRAID: Users scan in grocery store aisles and many feel overwhelmed. Nearly nothing is perfectly clean, and that is okay. In summary, quick_take, and flag reasons, be accurate but calm. Emphasize that dose and frequency matter: everyday leave-on products and foods matter more than something rinsed off or used occasionally. Prioritize the one or two swaps that would make the biggest difference. Never imply someone has harmed themselves or their family. Never use alarmist words like toxic poison, dangerous, or terrifying unless it is a true acute safety hazard (like bleach mixed with ammonia).
+
 FINAL MANDATORY CHECK BEFORE RETURNING JSON: Look at your summary. If it contains any negative language about the product — words like synthetic, ultra-processed, industrial, processed, concerning, phosphate, enriched, conventional, non-organic, or similar — go back through your flags array and make sure every ingredient that justifies that language has its own individual flag entry rated AVOID or CAUTION. If your flags array is empty or contains only SAFE ratings but your summary is negative, you have made a critical error. Fix it before returning.`;
 
   let content = [];
@@ -512,7 +536,7 @@ FINAL MANDATORY CHECK BEFORE RETURNING JSON: Look at your summary. If it contain
 
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1500,
+    max_tokens: 2000,
     messages: [{ role: "user", content }],
   });
 
@@ -574,6 +598,7 @@ PRODUCT TYPE AWARENESS: The ingredients you are educating about may come from a 
 
 The overall_symptoms field must NEVER mention "regular consumption," "eating," or "dietary intake" for cleaning or personal care products. Use "repeated exposure," "skin contact," or "inhalation" instead.
 - Use "research suggests" or "some studies have linked" for associations
+- Plain everyday language only. Never use jargon like "compromised detox pathways," "methylation," or "toxic burden" without immediately explaining it in simple words. Keep the tone calm and practical, never fear-based.
 - Use "is known to" only for established facts
 - Use "some practitioners believe" for naturopathic perspectives not yet in mainstream research
 - Never overstate harm
@@ -685,6 +710,10 @@ export default async function handler(req, res) {
       } else {
         parsed.verdict = 'LOOKS CLEAN';
       }
+
+      const { score, tier } = computeScore(parsed.flags, combinations, parsed.exposure);
+      parsed.score = score;
+      parsed.tier = tier;
     }
 
     return res.status(200).json(parsed);
