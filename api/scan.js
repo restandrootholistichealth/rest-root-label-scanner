@@ -307,6 +307,7 @@ const AVOID_RULES = [
   { rx: /sodium nitr(ate|ite)|potassium nitr(ate|ite)/, why: 'A curing chemical in processed meat — on the Rest & Root avoid list.' },
   { rx: /partially hydrogenated|potassium bromate|azodicarbonamide|brominated vegetable oil|\bbvo\b|carrageenan|monosodium glutamate|\bmsg\b|disodium (inosinate|guanylate)/, why: 'On the Rest & Root avoid list.' },
   { rx: /benzalkonium chloride|\bquats?\b|sodium hypochlorite|\bammonia\b/, why: 'A harsh chemical on the Rest & Root avoid list.' },
+  { rx: /\b(butane|isobutane|propane|dimethyl ether|hydrofluorocarbon|hfc-?152a|1,1-difluoroethane|tetrafluoroethane|propellant)\b/, why: 'Aerosol sprays use petroleum gases like butane and propane as propellants (volatile organic compounds) and turn the whole formula into a fine mist you breathe in. Several aerosol dry shampoos, sunscreens, and deodorants have been recalled for benzene contamination.' },
 ];
 
 const CAUTION_RULES = [
@@ -370,13 +371,26 @@ function enforceRules(parsed, ingredientsText) {
     if (!rule) return;
     const already = flags.some(f => {
       const n = String(f.name || '').toLowerCase();
-      return n.length > 3 && (n.includes(seg) || seg.includes(n));
+      if (n.length <= 3) return false;
+      // Whole-word containment, so "butane" does not swallow "isobutane".
+      const within = (a, b) => { const i = b.indexOf(a); return i >= 0 && !/[a-z]/.test(b[i - 1] || '') && !/[a-z]/.test(b[i + a.length] || ''); };
+      return within(seg, n) || within(n, seg);
     });
     if (already) return;
     flags.push({ name: titleCase(seg), risk: rule.risk, reason: rule.why, found_in: '' });
   });
 
-  // 3. Titanium dioxide: AVOID only when it can be swallowed or breathed in.
+  // 3. Aerosol sprays are always a red flag, even if the label leaves the
+  //    propellant off or the AI misses it.
+  const hasPropellantFlag = flags.some(f => /\b(butane|isobutane|propane|dimethyl ether|hydrofluorocarbon|hfc-?152a|difluoroethane|tetrafluoroethane|propellant|aerosol)\b/.test(String(f.name || '').toLowerCase()));
+  const isAerosol = parsed.is_aerosol === true || parsed.is_aerosol === 'true' ||
+    /\b(butane|isobutane|propane|dimethyl ether|hydrofluorocarbon|hfc-?152a|difluoroethane|tetrafluoroethane|propellant)\b/.test(String(ingredientsText || '').toLowerCase());
+  if (isAerosol) {
+    if (!hasPropellantFlag) flags.unshift({ name: 'Aerosol Spray (Propellant)', risk: 'AVOID', reason: 'Aerosol sprays use petroleum gases like butane and propane as propellants (volatile organic compounds) and turn the whole formula into a fine mist you breathe in. Several aerosol dry shampoos, sunscreens, and deodorants have been recalled for benzene contamination.', found_in: 'Hairspray, dry shampoo, spray sunscreen, spray deodorant, air fresheners, cooking spray' });
+    if (!parsed.product_form || parsed.product_form === 'other') parsed.product_form = 'spray';
+  }
+
+  // 4. Titanium dioxide: AVOID only when it can be swallowed or breathed in.
   //    EU banned it as a food additive (E171) in 2022; the Campaign for Safe
   //    Cosmetics Red List lists it for inhalable products. In creams and
   //    lotions it is left as the AI rated it.
@@ -400,7 +414,7 @@ function enforceRules(parsed, ingredientsText) {
     }
   }
 
-  // 4. Drop the generic catch-all if real flags now exist.
+  // 5. Drop the generic catch-all if real flags now exist.
   parsed.flags = flags.length > 1 ? flags.filter(f => f.name !== 'Synthetic Ingredients Detected') : flags;
 }
 
@@ -488,6 +502,7 @@ JSON format:
   "summary": "2-3 warm plain English sentences about the product overall. Do NOT include swap suggestions or DIY recipes in the summary — those go in swap_tip and diy_recipe fields only.",
   "quick_take": "ONE short, calm sentence (15 words max) a shopper can read in the store aisle. Lead with the single most useful takeaway. No fear language, no exclamation marks.",
   "product_form": "Exactly one of: food (anything eaten or drunk, including candy, gum, and supplements), lip (lipstick, lip gloss, lip balm), oral_care (toothpaste, mouthwash), powder (loose or pressed face powder, setting powder, blush, eyeshadow, body or baby powder, dry shampoo powder), spray (aerosol or pump spray: hairspray, spray sunscreen, dry shampoo spray, body mist, spray deodorant), other",
+  "is_aerosol": true if this is a pressurized aerosol spray can (hairspray, dry shampoo spray, spray sunscreen, spray deodorant, aerosol air freshener, cooking spray, whipped cream can), otherwise false,
   "exposure": "Exactly one of: leave_on (lotion, deodorant, makeup, serum, sunscreen), rinse_off (shampoo, body wash, soap, toothpaste), ingested (food, drink, supplement), household (cleaning or laundry products)",
   "who_should_care": "1-2 everyday-language sentences naming who should pay closer attention to THIS product's concerns (for example: pregnant or trying to conceive, babies and young kids, people with hormone or thyroid issues, very sensitive skin, people who react to mold). NEVER use clinical jargon like 'compromised detox pathways' or 'impaired methylation' — describe it in words anyone understands. Empty string if the product is clean.",
   "swap_search": "A 2-5 word store search phrase for a cleaner version of this product, for example 'fragrance free body lotion' or 'organic mac and cheese'. Empty string if the product is clean.",
@@ -589,7 +604,7 @@ disodium inosinate — AVOID. MSG amplifier. Hidden glutamate source. Not a whol
 disodium guanylate — AVOID. MSG amplifier. Hidden glutamate source. Not a whole ingredient,
 dimethyl dicarbonate/DMDC,
 calcium disodium EDTA,
-butane/isobutane/propane as food propellants,
+aerosol sprays and their propellants — butane, isobutane, propane, dimethyl ether, HFC-152a — in ANY product (hairspray, dry shampoo, spray sunscreen, spray deodorant, air freshener, cooking spray),
 sodium benzoate when combined with vitamin C,
 citric acid in processed or packaged products — CAUTION, not AVOID. Industrially produced citric acid is made via Aspergillus niger mold fermentation, not from citrus fruit. Flag as CAUTION and note: "The citric acid in most packaged products is produced via mold fermentation, not from citrus. People with mold sensitivities may react to it, but it is generally well tolerated by most people." Never rate citric acid as AVOID or PUT IT BACK — it is a CAUTION only.
 sodium triphosphate/sodium tripolyphosphate/STPP — AVOID. Synthetic phosphate additive with no nutritional value. Research links high synthetic phosphate intake to kidney stress and cardiovascular strain. A marker of ultra-processed food,
@@ -716,6 +731,7 @@ FINAL MANDATORY CHECK BEFORE RETURNING JSON: Look at your summary. If it contain
           quick_take: pick('quick_take'),
           exposure: pick('exposure'),
           product_form: pick('product_form'),
+          is_aerosol: /"is_aerosol"\s*:\s*true/.test(raw),
           verdict: 'CAUTION',
           flags,
           swap_tip: pick('swap_tip'),
