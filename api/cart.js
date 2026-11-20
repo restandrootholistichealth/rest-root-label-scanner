@@ -5,8 +5,8 @@
 // request and checked here, so the AI can't be used without buying.
 
 import Anthropic from "@anthropic-ai/sdk";
+import { checkAccess } from "./_auth.js";
 
-const CART_PASSWORD = 'CleanCart2026';
 
 const STORE_HINTS = {
   walmart: "Walmart: Great Value Organic, Marketside Organic, Simple Mills, Siete, Primal Kitchen, Kevita, Annie's, Applegate, Horizon Organic, Chosen Foods.",
@@ -104,12 +104,14 @@ export default async function handler(req, res) {
 
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = {}; } }
-  const { key, verify_only, list, store, budget, needs } = body || {};
+  const { session, verify_only, list, store, budget, needs } = body || {};
 
-  if ((key || '').trim() !== CART_PASSWORD) {
-    return res.status(401).json({ error: "That password didn't work. Check your Cart Builder email from Lindsay." });
+  const access = await checkAccess(session, 'cart');
+  if (!access.ok) {
+    const status = access.code === 'login' ? 401 : access.code === 'renew' ? 402 : 403;
+    return res.status(status).json({ code: access.code, session: access.session || null, error: access.code === 'login' ? 'Please log in.' : access.code === 'renew' ? "Your scanner subscription isn't active." : "The Clean Cart Builder isn't on your account yet." });
   }
-  if (verify_only) return res.status(200).json({ ok: true });
+  if (verify_only) return res.status(200).json({ ok: true, session: access.session || null });
 
   const cleanList = String(list || '').trim().slice(0, 4000);
   if (!cleanList) return res.status(400).json({ error: "Add a few items to your list first." });
@@ -127,6 +129,7 @@ export default async function handler(req, res) {
       console.error('Cart Builder could not parse:', text.slice(0, 500));
       return res.status(500).json({ error: "Something went sideways building your cart. Please try again." });
     }
+    if (access.session) parsed.session = access.session;
     return res.status(200).json(parsed);
   } catch (err) {
     console.error('Cart Builder error:', err);

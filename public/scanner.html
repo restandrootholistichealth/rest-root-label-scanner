@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
+<script src="/rr-auth.js"></script>
 <script>
   (async function() {
     try {
@@ -8,6 +10,13 @@
       const key = params.get('key');
       if (key === 'RootScanner2025') {
         localStorage.setItem('rr_unlocked', 'true');
+      }
+      // Personal login: a session means she's logged in (re-checked below).
+      if (window.RR && RR.session()) return;
+      // Old shared-password unlock only works during the grace period.
+      if (localStorage.getItem('rr_unlocked') === 'true' && window.RR && !RR.graceActive()) {
+        window.location.href = '/login?next=/scanner';
+        return;
       }
     try {
       const purchases = await twinr_get_iap_purchases();
@@ -34,6 +43,7 @@
       } catch(e) {}
       window.location.href = '/onboarding';
     } catch(e) {
+      if (window.RR && RR.session()) return;
       if (localStorage.getItem('rr_unlocked') === 'true') return;
       if (localStorage.getItem('rr_free_scan_available') === 'true') return;
       if (localStorage.getItem('rr_free_scan_used') === 'true') {
@@ -57,7 +67,6 @@ fbq('init', '27274020995621082');
 fbq('track', 'PageView');
 </script>
 <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=27274020995621082&ev=PageView&noscript=1"/></noscript>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rest & Root Label Scanner</title>
 <meta name="theme-color" content="#5C3D2E">
@@ -213,6 +222,13 @@ fbq('track', 'PageView');
   .paywall-cta { width: 100%; padding: 18px; background: var(--sage); color: white; border: none; border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer; font-family: inherit; margin-bottom: 8px; box-shadow: 0 4px 16px rgba(122,158,126,0.4); transition: all 0.2s; }
   .paywall-trust { text-align: center; font-size: 11px; color: var(--warm-brown); margin-bottom: 16px; }
   .paywall-no-thanks { width: 100%; background: none; border: none; color: var(--warm-brown); font-size: 13px; cursor: pointer; font-family: inherit; padding: 8px; text-decoration: underline; }
+  .tool-nav { display: flex; justify-content: center; gap: 6px; padding: 10px 12px; background: #4E3326; flex-wrap: wrap; }
+  .tool-nav a { color: var(--cream); text-decoration: none; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 20px; opacity: 0.8; }
+  .tool-nav a.active { background: var(--sage); opacity: 1; }
+  .login-banner { background: #FFF8F0; border-bottom: 1px solid #E8D5C4; padding: 10px 16px; text-align: center; font-size: 13px; color: var(--brown); line-height: 1.5; }
+  .login-banner a { color: var(--deep-sage); font-weight: 700; }
+  .renew-overlay { position: fixed; inset: 0; background: rgba(92,61,46,0.55); z-index: 9998; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .renew-card { background: var(--cream); border-radius: 18px; padding: 28px 22px; max-width: 400px; width: 100%; text-align: center; color: var(--brown); }
 </style>
 </head>
 <body>
@@ -227,6 +243,23 @@ fbq('track', 'PageView');
 <div class="header">
   <h1>Rest & Root Label Scanner</h1>
   <p>Certified Naturopath & HTMA Practitioner</p>
+</div>
+<nav class="tool-nav">
+  <a href="/scanner" class="active">🔍 Scanner</a>
+  <a href="/cart">🛒 Cart Builder</a>
+  <a href="/meals">🍽️ Meal Planner</a>
+</nav>
+<div class="login-banner" id="legacyBanner" style="display:none;">
+  🌿 New: log in with your email instead of a password. <a href="/login?next=/scanner">Switch now — it takes 10 seconds</a>
+</div>
+<div class="renew-overlay" id="renewOverlay" style="display:none;">
+  <div class="renew-card">
+    <div style="font-size:30px;margin-bottom:8px;">🌿</div>
+    <div style="font-family:Georgia,serif;font-size:22px;margin-bottom:10px;">Your subscription isn't active</div>
+    <p style="font-size:14px;color:#8B6F5C;line-height:1.6;margin-bottom:18px;">It looks like your subscription was cancelled or a payment didn't go through. Restart it and you're right back in.</p>
+    <a id="renewLink" href="https://restandrootholistichealth.systeme.io/87f9a7a0-346d5f81" style="display:block;background:#7A9E7E;color:white;text-decoration:none;padding:15px;border-radius:10px;font-weight:700;">Restart my subscription →</a>
+    <a href="#" onclick="RR.logout();location.href='/login?next=/scanner';return false;" style="display:inline-block;margin-top:14px;color:#4A6E4E;font-size:13px;">Log in with a different email</a>
+  </div>
 </div>
 
 <div class="paywall-overlay" id="paywallOverlay">
@@ -335,8 +368,20 @@ fbq('track', 'PageView');
     }
 
     try { fbq('track', 'ViewContent', { content_name: isSubscriber ? 'scanner_subscriber' : 'scanner_free_user' }); } catch(e) {}
+
+    if (window.RR) {
+      if (RR.session()) {
+        RR.refresh().then(d => {
+          if (d.code === 'renew') { rrLocked = true; document.getElementById('renewOverlay').style.display = 'flex'; if (d.checkout) document.getElementById('renewLink').href = d.checkout; }
+          else if (d.code === 'login') { location.href = RR.loginUrl('/scanner'); }
+        });
+      } else if (RR.legacyOnly() && RR.graceActive()) {
+        document.getElementById('legacyBanner').style.display = 'block';
+      }
+    }
   }
 
+  let rrLocked = false;
   init();
 
   function setMode(mode) {
@@ -488,6 +533,7 @@ fbq('track', 'PageView');
   async function scan() {
     const btn = document.getElementById('scanBtn');
     const results = document.getElementById('results');
+    if (rrLocked) { document.getElementById('renewOverlay').style.display = 'flex'; return; }
 
     if (!isSubscriber) {
       const freeScanUsed = localStorage.getItem('rr_free_scan_used') === 'true';

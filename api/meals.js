@@ -4,8 +4,8 @@
 // Access: shared password (emailed after purchase), checked on every request.
 
 import Anthropic from "@anthropic-ai/sdk";
+import { checkAccess } from "./_auth.js";
 
-const MEALS_PASSWORD = 'RootMeals2026';
 
 const BUDGET_HINTS = {
   tight: "TIGHT BUDGET: Lean on affordable whole foods — eggs, beans, lentils, rice, potatoes, whole chickens and chicken thighs, ground beef or turkey, frozen vegetables, seasonal produce. Reuse ingredients across meals so nothing goes to waste. Make one meal a planned leftovers night.",
@@ -85,10 +85,12 @@ export default async function handler(req, res) {
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = {}; } }
   const b = body || {};
 
-  if ((b.key || '').trim() !== MEALS_PASSWORD) {
-    return res.status(401).json({ error: "That password didn't work. Check your Meal Planner email from Lindsay." });
+  const access = await checkAccess(b.session, 'meals');
+  if (!access.ok) {
+    const status = access.code === 'login' ? 401 : access.code === 'renew' ? 402 : 403;
+    return res.status(status).json({ code: access.code, session: access.session || null, error: access.code === 'login' ? 'Please log in.' : access.code === 'renew' ? "Your scanner subscription isn't active." : "The Clean Meal Planner isn't on your account yet." });
   }
-  if (b.verify_only) return res.status(200).json({ ok: true });
+  if (b.verify_only) return res.status(200).json({ ok: true, session: access.session || null });
 
   const opts = {
     adults: clampInt(b.adults, 1, 8, 2),
@@ -114,6 +116,7 @@ export default async function handler(req, res) {
       console.error('Meal Planner could not parse:', text.slice(0, 500));
       return res.status(500).json({ error: "Something went sideways planning your week. Please try again." });
     }
+    if (access.session) parsed.session = access.session;
     return res.status(200).json(parsed);
   } catch (err) {
     console.error('Meal Planner error:', err);

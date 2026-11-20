@@ -85,14 +85,7 @@
 
 <div class="main">
 
-  <div id="unlock" class="card" style="display:none;">
-    <div style="font-family:Georgia,serif;font-size:20px;margin-bottom:8px;">Unlock your Meal Planner</div>
-    <p class="intro" style="margin-bottom:12px;">Enter the Meal Planner password from your email from Lindsay.</p>
-    <input type="password" id="pw" placeholder="Meal Planner password" autocomplete="off">
-    <button class="btn" onclick="unlock()">Unlock</button>
-    <div class="msg" id="unlockMsg"></div>
-    <p class="hint" style="margin-top:14px;">Can't find it? Search your inbox for "Clean Meal Planner" or email <a href="mailto:lindsay@restandrootholistic.com" style="color:var(--deep-sage);">lindsay@restandrootholistic.com</a>.</p>
-  </div>
+  <div id="gate" class="card" style="display:none;"></div>
 
   <div id="form" style="display:none;">
     <p class="intro">Tell me about your crew and your week. I'll plan simple, clean dinners your family will actually eat, plus one shopping list for all of it.</p>
@@ -149,8 +142,8 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="/rr-auth.js"></script>
 <script>
-  const KEY_STORE = 'rr_meals_key';
   const PREFS_STORE = 'rr_meals_prefs';
   const LAST_STORE = 'rr_meals_last';
   const SECTION_ORDER = ['Produce', 'Meat & Seafood', 'Dairy & Eggs', 'Bakery & Bread', 'Pantry', 'Frozen', 'Snacks', 'Drinks', 'Other'];
@@ -163,19 +156,28 @@
   function show(id, on) { document.getElementById(id).style.display = on ? 'block' : 'none'; }
 
   async function call(payload) {
-    const r = await fetch('/api/meals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const r = await fetch('/api/meals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, session: RR.session() }) });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) { const e = new Error(data.error || 'Something went wrong. Please try again.'); e.status = r.status; throw e; }
+    if (data.session) RR.save({ session: data.session });
+    if (!r.ok) { const e = new Error(data.error || 'Something went wrong. Please try again.'); e.status = r.status; e.code = data.code; throw e; }
     return data;
   }
 
-  async function unlock(given) {
-    const key = (given || document.getElementById('pw').value || '').trim();
-    const msg = document.getElementById('unlockMsg');
-    msg.textContent = '';
-    if (!key) { msg.textContent = 'Please enter your password.'; return; }
-    try { await call({ key, verify_only: true }); store(KEY_STORE, key); startForm(); }
-    catch (e) { show('unlock', true); msg.textContent = e.message; }
+  // Shown when she isn't logged in, her subscription lapsed, or she hasn't bought this tool.
+  const BUY_URL = ''; // TODO: standalone checkout link for this tool, once it exists
+  function gate(code) {
+    show('form', false);
+    const g = document.getElementById('gate');
+    let html = '';
+    if (code === 'renew') {
+      html = `<div style="font-family:Georgia,serif;font-size:20px;margin-bottom:8px;">Your subscription isn't active</div><p class="intro" style="margin-bottom:6px;">The Clean Meal Planner comes with an active scanner subscription. It looks like yours was cancelled or a payment didn't go through.</p><a class="btn" style="display:block;text-align:center;text-decoration:none;" href="${RR.CHECKOUT}">Restart my subscription →</a>`;
+    } else if (code === 'not_purchased') {
+      html = `<div style="font-family:Georgia,serif;font-size:20px;margin-bottom:8px;">Add the Clean Meal Planner</div><p class="intro" style="margin-bottom:6px;">Simple, clean dinners your family will actually eat, planned for your week, with one shopping list for all of it.</p>` + (BUY_URL ? `<a class="btn" style="display:block;text-align:center;text-decoration:none;" href="${BUY_URL}">Add it to my account →</a>` : `<a class="btn" style="display:block;text-align:center;text-decoration:none;" href="mailto:lindsay@restandrootholistic.com?subject=Add%20the%20Clean%20Meal%20Planner">Email Lindsay to add it →</a>`) + `<p class="hint" style="margin-top:12px;">Already bought it? It can take a minute to show up. <a href="#" onclick="RR.logout();location.href=RR.loginUrl('/meals');return false;" style="color:var(--deep-sage);">Log in again</a></p>`;
+    } else {
+      html = `<div style="font-family:Georgia,serif;font-size:20px;margin-bottom:8px;">Log in to use the Clean Meal Planner</div><p class="intro" style="margin-bottom:6px;">Use the email you bought with. We'll send you a 6-digit code — no password needed.</p><a class="btn" style="display:block;text-align:center;text-decoration:none;" href="${RR.loginUrl('/meals')}">Log in →</a>`;
+    }
+    g.innerHTML = html;
+    g.style.display = 'block';
   }
 
   // Controls
@@ -193,7 +195,7 @@
   function setStep(id, v) { document.querySelector(`.stepper[data-id="${id}"] span`).textContent = v; }
 
   function startForm() {
-    show('unlock', false); show('form', true);
+    show('form', true);
     const p = JSON.parse(read(PREFS_STORE) || '{}');
     if (p.adults != null) setStep('adults', p.adults);
     if (p.kids != null) setStep('kids', p.kids);
@@ -224,13 +226,13 @@
     let i = 0; const lt = document.getElementById('loadingText'); lt.textContent = loadingLines[0];
     const timer = setInterval(() => { i = Math.min(i + 1, loadingLines.length - 1); lt.textContent = loadingLines[i]; }, 6000);
     try {
-      const result = await call({ key: read(KEY_STORE), ...opts });
+      const result = await call({ ...opts });
       lastPlan = result;
       store(LAST_STORE, JSON.stringify(result));
       render(result);
       document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
     } catch (e) {
-      if (e.status === 401) { store(KEY_STORE, null); show('form', false); show('unlock', true); }
+      if (e.code === 'login' || e.code === 'renew' || e.code === 'not_purchased') { gate(e.code); return; }
       msg.textContent = e.message;
     } finally { clearInterval(timer); show('loading', false); btn.disabled = false; }
   }
@@ -290,10 +292,10 @@
   }
 
   (function init() {
-    const params = new URLSearchParams(location.search);
-    const fromLink = params.get('key');
-    if (fromLink) { history.replaceState(null, '', location.pathname); unlock(fromLink); return; }
-    if (read(KEY_STORE)) startForm(); else show('unlock', true);
+    if (!RR.session()) { gate('login'); return; }
+    call({ verify_only: true })
+      .then(() => startForm())
+      .catch(e => gate(e.code || (e.status === 401 ? 'login' : '')) );
   })();
 </script>
 </body>

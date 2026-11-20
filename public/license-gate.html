@@ -3,240 +3,147 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unlock Your Label Scanner — Rest & Root</title>
-
+<title>Log In · Rest &amp; Root</title>
+<meta name="theme-color" content="#5C3D2E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --cream: #FAF6F0;
-    --sage: #7A9E7E;
-    --deep-sage: #5C7A60;
-    --bark: #5C3D2E;
-    --warm-brown: #8B6F5C;
-    --light-sage: #EEF4EE;
-    --blush: #E8D5C4;
-    --error: #C0392B;
-  }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--cream);
-    color: var(--bark);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    line-height: 1.6;
-  }
-  .gate-container {
-    width: 100%;
-    max-width: 480px;
-    background: white;
-    border-radius: 24px;
-    padding: 48px 36px;
-    box-shadow: 0 20px 60px rgba(92, 61, 46, 0.08);
-    text-align: center;
-  }
-  .leaf { font-size: 32px; margin-bottom: 16px; opacity: 0.7; }
-  .brand {
-    font-size: 11px;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--sage);
-    margin-bottom: 12px;
-    font-weight: 500;
-  }
-  h1 {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 32px;
-    font-weight: 600;
-    line-height: 1.2;
-    margin-bottom: 16px;
-    color: var(--bark);
-  }
-  h1 em { font-style: italic; color: var(--sage); }
-  .subtitle {
-    font-size: 15px;
-    color: var(--warm-brown);
-    margin-bottom: 32px;
-    line-height: 1.6;
-  }
-  .input-group { margin-bottom: 20px; text-align: left; }
-  label {
-    display: block;
-    font-size: 12px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--deep-sage);
-    margin-bottom: 8px;
-    font-weight: 600;
-  }
-  input[type="text"] {
-    width: 100%;
-    padding: 16px 18px;
-    border: 2px solid var(--light-sage);
-    border-radius: 12px;
-    font-size: 15px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    color: var(--bark);
-    background: var(--cream);
-    transition: all 0.2s ease;
-    letter-spacing: 0.05em;
-  }
-  input[type="text"]:focus {
-    outline: none;
-    border-color: var(--sage);
-    background: white;
-    box-shadow: 0 0 0 4px rgba(122, 158, 126, 0.1);
-  }
-  input[type="text"]::placeholder { color: var(--blush); }
-  button {
-    width: 100%;
-    padding: 16px;
-    background: var(--sage);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-bottom: 16px;
-  }
-  button:hover:not(:disabled) {
-    background: var(--deep-sage);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 16px rgba(122, 158, 126, 0.2);
-  }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  .message {
-    padding: 14px 16px;
-    border-radius: 10px;
-    font-size: 14px;
-    margin-bottom: 16px;
-    display: none;
-  }
-  .message.error {
-    background: #FCEBEA;
-    color: var(--error);
-    border: 1px solid #F0C4BF;
-    display: block;
-  }
-  .message.success {
-    background: var(--light-sage);
-    color: var(--deep-sage);
-    border: 1px solid var(--sage);
-    display: block;
-  }
-  .help-text {
-    font-size: 13px;
-    color: var(--warm-brown);
-    line-height: 1.6;
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid var(--light-sage);
-  }
-  .help-text a { color: var(--sage); text-decoration: underline; font-weight: 500; }
-  .purchase-link {
-    display: inline-block;
-    margin-top: 8px;
-    color: var(--sage);
-    font-weight: 600;
-    text-decoration: none;
-    border-bottom: 2px solid var(--blush);
-    padding-bottom: 2px;
-  }
+  :root { --cream:#FAF6F0; --sage:#7A9E7E; --deep-sage:#4A6E4E; --brown:#5C3D2E; --blush:#C9A882; --light-sage:#EEF4EE; --red:#C0392B; --warm-brown:#8B6F5C; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--cream); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--brown); min-height:100vh; }
+  .header { background:var(--brown); padding:20px 24px; text-align:center; }
+  .header h1 { font-family:Georgia,serif; font-size:26px; color:var(--cream); font-weight:600; margin-bottom:4px; }
+  .header p { color:var(--blush); font-size:12px; letter-spacing:2px; text-transform:uppercase; }
+  .main { max-width:440px; margin:0 auto; padding:32px 16px 60px; }
+  .card { background:white; border:1px solid #E8E0D8; border-radius:16px; padding:26px 22px; }
+  h2 { font-family:Georgia,serif; font-size:22px; font-weight:normal; margin-bottom:8px; }
+  p.sub { font-size:14px; color:var(--warm-brown); line-height:1.6; margin-bottom:18px; }
+  label { display:block; font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--warm-brown); margin-bottom:8px; }
+  input { width:100%; padding:14px; font-size:17px; font-family:inherit; border:1px solid #ddd; border-radius:10px; color:var(--brown); background:white; }
+  input:focus { outline:none; border-color:var(--sage); }
+  #code { letter-spacing:0.4em; text-align:center; font-size:24px; font-weight:700; }
+  .btn { width:100%; padding:15px; font-size:15px; font-weight:700; font-family:inherit; border:none; border-radius:10px; background:var(--sage); color:white; cursor:pointer; margin-top:16px; text-decoration:none; display:block; text-align:center; }
+  .btn:disabled { opacity:0.6; cursor:wait; }
+  .btn.brown { background:var(--brown); }
+  .link { background:none; border:none; color:var(--deep-sage); font-family:inherit; font-size:13px; text-decoration:underline; cursor:pointer; margin-top:14px; display:inline-block; }
+  .msg { font-size:14px; margin-top:14px; line-height:1.5; }
+  .msg.error { color:var(--red); }
+  .msg.ok { color:var(--deep-sage); }
+  .help { font-size:12px; color:var(--warm-brown); text-align:center; margin-top:22px; line-height:1.7; }
+  .help a { color:var(--deep-sage); }
+  .hidden { display:none; }
 </style>
 </head>
 <body>
-<div class="gate-container">
-  <div class="leaf">🌿</div>
-  <div class="brand">Rest & Root Holistic Health</div>
-  <h1>Unlock Your <em>Label Scanner</em></h1>
-  <p class="subtitle">
-    Check your email from Lindsay for your password. Enter it below to access your scanner.
+<div class="header">
+  <h1>Rest &amp; Root</h1>
+  <p>Label Scanner · Cart Builder · Meal Planner</p>
+</div>
+<div class="main">
+  <div class="card">
+    <!-- Step 1: email -->
+    <div id="step-email">
+      <h2>Log in</h2>
+      <p class="sub">Enter the email you used when you bought the scanner. I'll send you a 6-digit code. No password to remember.</p>
+      <label for="email">Your email</label>
+      <input type="email" id="email" autocomplete="email" inputmode="email" placeholder="you@example.com">
+      <button class="btn" id="sendBtn" onclick="sendCode()">Send my code</button>
+    </div>
+    <!-- Step 2: code -->
+    <div id="step-code" class="hidden">
+      <h2>Check your email</h2>
+      <p class="sub">We sent a 6-digit code to <strong id="sentTo"></strong>. It can take a minute, so check spam too.</p>
+      <label for="code">Your code</label>
+      <input type="text" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••">
+      <button class="btn" id="verifyBtn" onclick="verify()">Log in</button>
+      <button class="link" onclick="sendCode(true)">Send a new code</button>
+      <button class="link" onclick="back()" style="margin-left:12px;">Use a different email</button>
+    </div>
+    <!-- Renew -->
+    <div id="step-renew" class="hidden">
+      <h2>Your subscription isn't active</h2>
+      <p class="sub">It looks like your scanner subscription was cancelled or a payment didn't go through. Restart it and you'll be right back in, everything just as you left it.</p>
+      <a class="btn brown" id="renewBtn" href="#">Restart my subscription →</a>
+      <button class="link" onclick="back()">Try a different email</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+  <p class="help">
+    New here? <a href="https://restandrootholistichealth.systeme.io/87f9a7a0-346d5f81">Start your 7-day free trial</a><br>
+    Trouble logging in? Email <a href="mailto:lindsay@restandrootholistic.com">lindsay@restandrootholistic.com</a>
   </p>
-
-  <div class="message" id="message"></div>
-
-  <div class="input-group">
-    <label for="password">Your Password</label>
-    <input
-      type="text"
-      id="password"
-      placeholder="Enter your password"
-      autocomplete="off"
-      spellcheck="false"
-    />
-  </div>
-
-  <button id="unlock-btn" onclick="verifyPassword()">Unlock My Scanner 🌿</button>
-
-  <div class="help-text">
-    <strong>Where's my password?</strong><br>
-    Check your email from <strong>Lindsay | Rest & Root</strong> — subject line is "🌿 Your Rest & Root Label Scanner is ready!" Your password is in that email.
-    <br><br>
-    Don't have it yet? Check your spam folder first.
-    Then email Lindsay at <a href="mailto:restandrootholistichealing@gmail.com">restandrootholistichealing@gmail.com</a>
-    <br><br>
-    Don't have the scanner yet?
-    <a href="https://restandrootholistichealth.systeme.io/87f9a7a0-346d5f81" class="purchase-link">Get it here →</a>
-  </div>
 </div>
 
+<script src="/rr-auth.js"></script>
 <script>
-  const CORRECT_PASSWORD = 'RootScanner2025';
+  let codeToken = null;
+  const params = new URLSearchParams(location.search);
+  const next = (params.get('next') || '/scanner').replace(/[^\w\/\-?=&]/g, '');
+  const $ = id => document.getElementById(id);
+  function msg(t, kind) { $('msg').textContent = t || ''; $('msg').className = 'msg ' + (kind || ''); }
+  function show(step) { ['step-email', 'step-code', 'step-renew'].forEach(s => $(s).classList.toggle('hidden', s !== step)); }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    const unlocked = localStorage.getItem('rr_unlocked');
-    if (unlocked === 'true') {
-      window.location.href = '/scanner';
-      return;
-    }
-
-    // Auto-unlock links: ?key=RootScanner2025 skips the manual password
-    // form entirely, e.g. for links emailed straight after purchase.
-    const params = new URLSearchParams(window.location.search);
-    const key = params.get('key');
-    if (key === CORRECT_PASSWORD) {
-      localStorage.setItem('rr_unlocked', 'true');
-      window.location.href = '/scanner';
-    }
-  });
-
-  function verifyPassword() {
-    const input = document.getElementById('password');
-    const btn = document.getElementById('unlock-btn');
-    const entered = input.value.trim();
-
-    if (!entered) {
-      showMessage('Please enter your password from your email.', 'error');
-      input.focus();
-      return;
-    }
-
-    if (entered === CORRECT_PASSWORD) {
-      localStorage.setItem('rr_unlocked', 'true');
-      showMessage("🌿 You're in! Redirecting to your scanner...", 'success');
-      btn.disabled = true;
-      setTimeout(() => {
-        window.location.href = '/scanner';
-      }, 1200);
-    } else {
-      showMessage("That password didn't work. Please check your email and try again.", 'error');
-      input.focus();
-    }
+  async function post(payload) {
+    const r = await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const d = await r.json().catch(() => ({}));
+    return { status: r.status, d };
   }
 
-  document.getElementById('password').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') verifyPassword();
-  });
-
-  function showMessage(text, type) {
-    const msg = document.getElementById('message');
-    msg.textContent = text;
-    msg.className = 'message ' + type;
+  async function sendCode(resend) {
+    const email = $('email').value.trim();
+    msg('');
+    if (!email) { msg('Please enter your email.', 'error'); return; }
+    const btn = $('sendBtn'); btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const { status, d } = await post({ action: 'request_code', email });
+      if (d.code === 'renew') { $('renewBtn').href = d.checkout || RR.CHECKOUT; show('step-renew'); return; }
+      if (!d.ok) { msg(d.error || 'Something went wrong. Please try again.', 'error'); return; }
+      codeToken = d.codeToken;
+      $('sentTo').textContent = email;
+      show('step-code');
+      $('code').value = '';
+      $('code').focus();
+      if (resend) msg('New code sent.', 'ok');
+    } catch (e) {
+      msg('No connection. Check your signal and try again.', 'error');
+    } finally { btn.disabled = false; btn.textContent = 'Send my code'; }
   }
+
+  async function verify() {
+    const code = $('code').value.replace(/\D/g, '');
+    msg('');
+    if (code.length !== 6) { msg('Enter the 6-digit code from your email.', 'error'); return; }
+    const btn = $('verifyBtn'); btn.disabled = true; btn.textContent = 'Checking…';
+    try {
+      const { d } = await post({ action: 'verify', email: $('email').value.trim(), code, codeToken });
+      if (d.code === 'renew') { $('renewBtn').href = d.checkout || RR.CHECKOUT; show('step-renew'); return; }
+      if (!d.ok) { msg(d.error || 'That didn’t work. Please try again.', 'error'); return; }
+      RR.save(d);
+      msg("🌿 You're in!", 'ok');
+      setTimeout(() => { location.href = next; }, 600);
+    } catch (e) {
+      msg('No connection. Check your signal and try again.', 'error');
+    } finally { btn.disabled = false; btn.textContent = 'Log in'; }
+  }
+
+  function back() { msg(''); show('step-email'); $('email').focus(); }
+
+  $('email').addEventListener('keypress', e => { if (e.key === 'Enter') sendCode(); });
+  $('code').addEventListener('input', () => { if ($('code').value.replace(/\D/g, '').length === 6) verify(); });
+
+  (function init() {
+    const pre = params.get('email') || RR.email();
+    if (pre) $('email').value = pre;
+    // Already logged in? Go straight through.
+    if (RR.session()) { location.href = next; return; }
+    // Old "Open Your Scanner" email links (?key=RootScanner2025) still work
+    // during the grace period.
+    if (params.get('key') === 'RootScanner2025' && RR.graceActive()) {
+      try { localStorage.setItem('rr_unlocked', 'true'); } catch (e) {}
+      location.href = '/scanner';
+    }
+  })();
 </script>
 </body>
 </html>

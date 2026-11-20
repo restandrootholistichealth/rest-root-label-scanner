@@ -13,6 +13,7 @@
 // field paths below can be corrected.
 
 import { Resend } from 'resend';
+import { tagContact, ADDON_TAGS } from './_auth.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -55,29 +56,29 @@ async function sendPasswordEmail(email, name) {
 
       <h1>You're in, ${firstName}! 🎉</h1>
 
-      <p>Welcome to the Rest & Root Label Scanner family. Your password to access the scanner is below.</p>
+      <p>Welcome to the Rest & Root Label Scanner family. There's no password to remember. You log in with this email address.</p>
 
       <div class="key-box">
-        <div class="key-label">Your Password</div>
-        <div class="key">${SCANNER_PASSWORD}</div>
+        <div class="key-label">Log in with</div>
+        <div class="key" style="font-size:18px;letter-spacing:0;">${email}</div>
       </div>
 
-      <a href="https://restandrootholistic.com/license-gate.html?key=${SCANNER_PASSWORD}" class="button">
+      <a href="https://restandrootholistic.com/login?email=${encodeURIComponent(email)}" class="button">
         Open Your Scanner →
       </a>
 
       <div class="steps">
         <div class="step">
           <div class="step-num">1</div>
-          <div>Click the button above to open your scanner</div>
+          <div>Tap the button above</div>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <div>Type your password from above into the unlock box</div>
+          <div>We'll email you a 6-digit code. Type it in.</div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <div>Click "Unlock Scanner" — you're in!</div>
+          <div>You're in! Add it to your home screen so it's one tap away.</div>
         </div>
       </div>
 
@@ -92,7 +93,7 @@ async function sendPasswordEmail(email, name) {
       <hr class="divider">
 
       <div class="footer">
-        <p>Save this email — your password lives here.<br>
+        <p>Save this email so you can always find your login link.<br>
         <a href="https://restandrootholistic.com">restandrootholistic.com</a> ·
         <a href="mailto:restandrootholistichealing@gmail.com">restandrootholistichealing@gmail.com</a></p>
       </div>
@@ -140,16 +141,16 @@ const ADDONS = [
   {
     match: 'cart builder',
     name: 'Clean Cart Builder',
-    password: 'CleanCart2026',
-    url: 'https://restandrootholistic.com/cart?key=CleanCart2026',
+    tag: ADDON_TAGS.cart,
+    path: '/cart',
     button: 'Open Your Cart Builder →',
     intro: 'Paste your normal grocery list, pick your store and budget, and it shows you what is already fine, what to swap, and exactly what to grab — without blowing your budget.',
   },
   {
     match: 'meal planner',
     name: 'Clean Meal Planner',
-    password: 'RootMeals2026',
-    url: 'https://restandrootholistic.com/meals?key=RootMeals2026',
+    tag: ADDON_TAGS.meals,
+    path: '/meals',
     button: 'Open Your Meal Planner →',
     intro: 'Tell it about your crew and your week, and it plans simple, clean dinners your family will actually eat, plus one shopping list you can send straight to your Cart Builder.',
   },
@@ -165,13 +166,13 @@ async function sendAddonEmail(email, name, addon) {
 <h1 style="font-size:24px;color:#5C3D2E;text-align:center;margin:0 0 16px;">Your ${addon.name} is ready, ${firstName}!</h1>
 <p style="font-size:15px;color:#8B6F5C;line-height:1.6;">${addon.intro}</p>
 <div style="background:#EEF4EE;border:2px dashed #7A9E7E;border-radius:12px;padding:20px;text-align:center;margin:24px 0;">
-<div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#7A9E7E;margin-bottom:8px;">Your ${addon.name} Password</div>
-<div style="font-size:24px;font-weight:bold;color:#5C3D2E;letter-spacing:0.1em;">${addon.password}</div></div>
-<a href="${addon.url}" style="display:block;background:#7A9E7E;color:white;text-decoration:none;text-align:center;padding:16px 24px;border-radius:12px;font-size:15px;font-weight:bold;margin:24px 0;">${addon.button}</a>
-<p style="font-size:15px;color:#8B6F5C;line-height:1.6;">The button unlocks it for you automatically. On a new phone or computer, just enter the password above.</p>
+<div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#7A9E7E;margin-bottom:8px;">Log in with</div>
+<div style="font-size:18px;font-weight:bold;color:#5C3D2E;">${email}</div></div>
+<a href="https://restandrootholistic.com/login?email=${encodeURIComponent(email)}&next=${addon.path}" style="display:block;background:#7A9E7E;color:white;text-decoration:none;text-align:center;padding:16px 24px;border-radius:12px;font-size:15px;font-weight:bold;margin:24px 0;">${addon.button}</a>
+<p style="font-size:15px;color:#8B6F5C;line-height:1.6;">It's already on your account. Open your scanner and tap <strong>${addon.name.replace('Clean ', '')}</strong> in the menu at the top. Same email, no extra password.</p>
 <p style="font-size:15px;color:#8B6F5C;line-height:1.6;">Questions? Just reply to this email — I read every one.</p>
 <p style="font-size:15px;color:#8B6F5C;line-height:1.6;margin-top:24px;">With love,<br><strong>Lindsay</strong><br><span style="color:#7A9E7E;font-size:13px;">Certified Naturopath + HTMA Practitioner<br>Rest &amp; Root Holistic Health</span></p>
-<p style="text-align:center;font-size:12px;color:#8B6F5C;margin-top:24px;">Save this email — your password lives here.</p>
+<p style="text-align:center;font-size:12px;color:#8B6F5C;margin-top:24px;">Save this email so you can always find your login link.</p>
 </div></div></body></html>`;
 
   const result = await resend.emails.send({
@@ -262,6 +263,14 @@ export default async function handler(req, res) {
       catch (e) { console.error('Scanner email error:', e); failed.push('Label Scanner'); }
     }
     for (const addon of addonsBought) {
+      // The tag is what unlocks the tool at login — do it first.
+      // Retry briefly: the contact may be created a moment after the sale.
+      let tagged = false;
+      for (let i = 0; i < 3 && !tagged; i++) {
+        try { await tagContact(email, addon.tag); tagged = true; }
+        catch (e) { console.error(`Tagging ${addon.name} (try ${i + 1}) failed:`, e.message); await new Promise(r => setTimeout(r, 2000)); }
+      }
+      if (!tagged) console.error(`=== COULD NOT TAG ${email} with "${addon.tag}" — add it by hand in Systeme.io ===`);
       try { await sendAddonEmail(email, name, addon); sent.push(addon.name); }
       catch (e) { console.error(`${addon.name} email error:`, e); failed.push(addon.name); }
     }
