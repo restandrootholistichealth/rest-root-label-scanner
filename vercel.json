@@ -7,6 +7,8 @@
     { "src": "api/verify-license.js", "use": "@vercel/node" },
     { "src": "api/scan.js", "use": "@vercel/node" },
     { "src": "api/meta-events.js", "use": "@vercel/node" },
+    { "src": "api/cart.js", "use": "@vercel/node" },
+    { "src": "api/meals.js", "use": "@vercel/node" },
     { "src": "public/**", "use": "@vercel/static" }
   ],
   "routes": [
@@ -21,11 +23,15 @@
     { "src": "/api/verify-license", "dest": "/api/verify-license.js" },
     { "src": "/api/scan", "dest": "/api/scan.js" },
     { "src": "/api/meta-events", "dest": "/api/meta-events.js" },
+    { "src": "/api/cart", "dest": "/api/cart.js" },
+    { "src": "/api/meals", "dest": "/api/meals.js" },
     { "src": "/", "dest": "/public/go.html" },
     { "src": "/go(\\.html)?", "dest": "/public/go.html" },
     { "src": "/onboarding(\\.html)?", "dest": "/public/index.html" },
     { "src": "/paywall(\\.html)?", "dest": "/public/paywall.html", "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" } },
     { "src": "/scanner(\\.html)?", "dest": "/public/scanner.html" },
+    { "src": "/cart(\\.html)?", "dest": "/public/cart.html" },
+    { "src": "/meals(\\.html)?", "dest": "/public/meals.html" },
     { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }

@@ -259,6 +259,64 @@ function detectCombinations(flags) {
   return warnings;
 }
 
+// ---------------------------------------------------------------------------
+// Hard rules enforced in code, because the AI does not always follow the
+// prompt (e.g. it once rated Chanel No. 5's parfum as safe -> score 96).
+// ---------------------------------------------------------------------------
+const ALWAYS_AVOID = [
+  /\b(fragrance|parfum|perfume)\b/, /paraben/, /phthalate/,
+  /dmdm hydantoin|diazolidinyl urea|imidazolidinyl urea|quaternium-15/,
+  /oxybenzone|benzophenone/, /triclosan|triclocarban/,
+  /sodium laur(yl|eth) sulfate|\bsls\b|\bsles\b/,
+  /\bbha\b|\bbht\b|butylated hydroxy/, /\btbhq\b|tertiary butylhydroquinone/,
+  /red (no\.? ?)?(3|40)\b|yellow (no\.? ?)?(5|6)\b|blue (no\.? ?)?(1|2)\b|green (no\.? ?)?3\b/,
+  /high fructose corn syrup|\bhfcs\b/, /sucralose|aspartame|acesulfame|saccharin|neotame/,
+  /sodium nitr(ate|ite)/, /partially hydrogenated/, /potassium bromate|azodicarbonamide|brominated vegetable oil/,
+  /carrageenan/, /propylene glycol/, /butylphenyl methylpropional|\blilial\b/,
+];
+// Fragrance allergens that must be disclosed on EU labels — at least CAUTION
+const FRAGRANCE_ALLERGENS = /\b(limonene|linalool|citronellol|geraniol|coumarin|eugenol|isoeugenol|hydroxycitronellal|alpha-isomethyl ionone|benzyl salicylate|benzyl benzoate|benzyl alcohol|benzyl cinnamate|cinnamal|cinnamyl alcohol|citral|farnesol|hexyl cinnamal|amyl cinnamal|amylcinnamyl alcohol|anise alcohol|evernia prunastri|oakmoss|treemoss|methyl 2-octynoate)\b/;
+
+function enforceRules(parsed, ingredientsText) {
+  const flags = parsed.flags || [];
+  const isClaim = n => /\bfree\b|greenwash|claim|misleading|unscented/.test(n);
+  flags.forEach(f => {
+    const n = String(f.name || '').toLowerCase();
+    if (isClaim(n)) return;
+    if (ALWAYS_AVOID.some(rx => rx.test(n))) {
+      f.risk = 'AVOID';
+    } else if (FRAGRANCE_ALLERGENS.test(n) && f.risk === 'SAFE') {
+      f.risk = 'CAUTION';
+      f.reason = 'A known fragrance allergen — one of the ingredients the EU requires labels to disclose because it commonly causes skin reactions.';
+    }
+  });
+  // If the label lists fragrance/parfum but the AI never flagged it, add it.
+  const text = String(ingredientsText || '').toLowerCase();
+  const labelHasFragrance = /\b(fragrance|parfum)\b(?!\s*-?\s*free)/.test(text);
+  const flagged = flags.some(f => /\b(fragrance|parfum|perfume)\b/.test(String(f.name || '').toLowerCase()) && f.risk === 'AVOID');
+  if (labelHasFragrance && !flagged) {
+    flags.unshift({
+      name: 'Fragrance (Parfum)',
+      risk: 'AVOID',
+      reason: 'One word on the label that can legally hide dozens of undisclosed chemicals, including some linked to hormone disruption.',
+      found_in: 'Perfume, lotion, shampoo, candles, laundry detergent, air fresheners',
+    });
+  }
+  // Flag every disclosed fragrance allergen on the label the AI skipped.
+  const allergenRx = new RegExp(FRAGRANCE_ALLERGENS.source, 'g');
+  const onLabel = [...new Set((text.match(allergenRx) || []))];
+  onLabel.forEach(a => {
+    if (flags.some(f => String(f.name || '').toLowerCase().includes(a))) return;
+    flags.push({
+      name: a.replace(/\b\w/g, c => c.toUpperCase()),
+      risk: 'CAUTION',
+      reason: 'A known fragrance allergen — one of the ingredients the EU requires labels to disclose because it commonly causes skin reactions.',
+      found_in: 'Perfume, scented lotion, shampoo, and cleaning products',
+    });
+  });
+  parsed.flags = flags;
+}
+
 // Steady 0-100 score computed from the flags (not by the AI) so the same
 // product always gets the same number. Everyday exposure counts more than
 // rinse-off or household use. Any AVOID caps the score below "Great pick";
@@ -656,6 +714,7 @@ export default async function handler(req, res) {
     if (!parsed || !parsed.summary) throw new Error("Could not analyze ingredients — please try again");
 
     if (parsed.flags) {
+      enforceRules(parsed, `${ingredients || ''} ${parsed.extracted_ingredients || ''}`);
       parsed.flags = parsed.flags.map(flag => {
         if (flag.risk !== 'SAFE') {
           flag.sources = getSourcesForIngredient(flag.name);

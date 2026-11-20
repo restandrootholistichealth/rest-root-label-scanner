@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clean Cart Builder</title>
+<meta name="theme-color" content="#5C3D2E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Clean Cart">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+  :root {
+    --cream: #FAF6F0; --sage: #7A9E7E; --deep-sage: #4A6E4E; --brown: #5C3D2E; --blush: #C9A882;
+    --light-sage: #EEF4EE; --red: #C0392B; --yellow: #E67E22; --yellow-light: #FDEBD0; --warm-brown: #8B6F5C; --line: #E8E0D8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--cream); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--brown); min-height: 100vh; }
+  .header { background: var(--brown); padding: 20px 24px; text-align: center; }
+  .header h1 { font-family: Georgia, serif; font-size: 26px; color: var(--cream); font-weight: 600; margin-bottom: 4px; }
+  .header p { color: var(--blush); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
+  .tool-nav { display: flex; justify-content: center; gap: 6px; padding: 10px 12px; background: #4E3326; flex-wrap: wrap; }
+  .tool-nav a { color: var(--cream); text-decoration: none; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 20px; opacity: 0.8; }
+  .tool-nav a.active { background: var(--sage); opacity: 1; }
+  .main { max-width: 600px; margin: 0 auto; padding: 24px 16px 60px; }
+  .card { background: white; border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  .intro { font-size: 14px; line-height: 1.6; color: var(--warm-brown); margin-bottom: 18px; }
+  label.field { display: block; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--warm-brown); margin: 16px 0 8px; }
+  label.field:first-child { margin-top: 0; }
+  textarea, select, input[type=password], input[type=text] { width: 100%; padding: 12px 14px; font-size: 15px; font-family: inherit; border: 1px solid #ddd; border-radius: 10px; background: white; color: var(--brown); }
+  textarea { min-height: 170px; resize: vertical; line-height: 1.5; }
+  textarea:focus, select:focus, input:focus { outline: none; border-color: var(--sage); }
+  .seg { display: flex; border: 1px solid var(--sage); border-radius: 10px; overflow: hidden; }
+  .seg button { flex: 1; padding: 11px 6px; border: none; background: white; color: var(--brown); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .seg button.on { background: var(--sage); color: white; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 8px 12px; border-radius: 20px; border: 1px solid #D0C4B8; background: white; color: var(--brown); font-size: 13px; font-family: inherit; cursor: pointer; }
+  .chip.on { background: var(--light-sage); border-color: var(--sage); color: var(--deep-sage); font-weight: 600; }
+  .hint { font-size: 12px; color: var(--warm-brown); margin-top: 6px; }
+  .btn { width: 100%; padding: 15px; font-size: 15px; font-weight: 700; font-family: inherit; border: none; border-radius: 10px; background: var(--sage); color: white; cursor: pointer; margin-top: 18px; }
+  .btn:disabled { opacity: 0.6; cursor: wait; }
+  .btn.secondary { background: white; color: var(--brown); border: 1px solid #D0C4B8; margin-top: 10px; }
+  .msg { font-size: 13px; margin-top: 10px; color: var(--red); }
+  .prefill-note { background: var(--light-sage); color: var(--deep-sage); font-size: 13px; padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; display: none; }
+  .loading { text-align: center; padding: 30px 10px; color: var(--deep-sage); font-size: 14px; display: none; }
+  .spinner { width: 34px; height: 34px; border: 3px solid var(--light-sage); border-top-color: var(--sage); border-radius: 50%; margin: 0 auto 12px; animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .summary { background: white; border: 2px solid var(--deep-sage); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  .summary-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .stat { flex: 1; text-align: center; background: var(--light-sage); border-radius: 10px; padding: 10px 6px; }
+  .stat b { display: block; font-size: 24px; color: var(--deep-sage); }
+  .stat span { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--warm-brown); }
+  .top3 { list-style: none; margin: 4px 0 10px; }
+  .top3 li { font-size: 14px; padding: 4px 0 4px 22px; position: relative; line-height: 1.4; }
+  .top3 li::before { content: '★'; position: absolute; left: 2px; color: var(--sage); }
+  .note { font-size: 13px; color: var(--deep-sage); font-style: italic; line-height: 1.5; }
+  .section-title { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--warm-brown); font-weight: 700; margin: 20px 0 10px; }
+  .item { background: white; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; gap: 12px; align-items: flex-start; }
+  .item.swap { border-left: 4px solid var(--sage); }
+  .item.swap.high { border-left-color: var(--yellow); }
+  .item input[type=checkbox] { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--sage); flex: 0 0 auto; }
+  .item.done .pick { text-decoration: line-through; opacity: 0.55; }
+  .item-body { flex: 1; min-width: 0; }
+  .orig { font-size: 12px; color: var(--warm-brown); text-decoration: line-through; margin-bottom: 2px; }
+  .pick { font-size: 15px; font-weight: 600; line-height: 1.35; }
+  .why { font-size: 13px; color: #6a5a4a; line-height: 1.5; margin-top: 4px; }
+  .look { font-size: 12px; color: var(--deep-sage); background: var(--light-sage); border-radius: 6px; padding: 6px 8px; margin-top: 6px; line-height: 1.45; }
+  .tags { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .tag { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; }
+  .tag.p-high { background: var(--yellow-light); color: var(--yellow); }
+  .tag.p-medium, .tag.p-low { background: #F0EBE6; color: var(--warm-brown); }
+  .tag.price { background: var(--light-sage); color: var(--deep-sage); }
+  .tag.keep { background: #F0EBE6; color: var(--warm-brown); }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--brown); color: white; padding: 12px 20px; border-radius: 24px; font-size: 14px; display: none; z-index: 10; }
+  .footer { text-align: center; font-size: 11px; color: var(--warm-brown); margin-top: 30px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Clean Cart Builder</h1>
+  <p>Rest &amp; Root Holistic Health</p>
+</div>
+<nav class="tool-nav">
+  <a href="/scanner">🔍 Scanner</a>
+  <a href="/cart" class="active">🛒 Cart Builder</a>
+  <a href="/meals">🍽️ Meal Planner</a>
+</nav>
+
+<div class="main">
+
+  <!-- UNLOCK -->
+  <div id="unlock" class="card" style="display:none;">
+    <div style="font-family:Georgia,serif;font-size:20px;margin-bottom:8px;">Unlock your Cart Builder</div>
+    <p class="intro" style="margin-bottom:12px;">Enter the Cart Builder password from your email from Lindsay.</p>
+    <input type="password" id="pw" placeholder="Cart Builder password" autocomplete="off">
+    <button class="btn" id="unlockBtn" onclick="unlock()">Unlock</button>
+    <div class="msg" id="unlockMsg"></div>
+    <p class="hint" style="margin-top:14px;">Can't find it? Search your inbox for "Clean Cart Builder" or email <a href="mailto:lindsay@restandrootholistic.com" style="color:var(--deep-sage);">lindsay@restandrootholistic.com</a>.</p>
+  </div>
+
+  <!-- FORM -->
+  <div id="form" style="display:none;">
+    <p class="intro">Paste your normal grocery list. I'll show you what's already fine, what to swap, and exactly what to grab at your store, without blowing your budget.</p>
+    <div class="card">
+      <div class="prefill-note" id="prefillNote">🍽️ Your Meal Planner shopping list is loaded below.</div>
+      <label class="field" for="list">Your grocery list</label>
+      <textarea id="list" placeholder="One item per line or separated by commas&#10;&#10;Example:&#10;goldfish crackers&#10;ranch dressing&#10;strawberries&#10;ground beef&#10;canola oil&#10;dish soap"></textarea>
+
+      <label class="field" for="store">Where are you shopping?</label>
+      <select id="store">
+        <option value="walmart">Walmart</option>
+        <option value="target">Target</option>
+        <option value="aldi">Aldi</option>
+        <option value="kroger">Kroger (and Kroger family)</option>
+        <option value="costco">Costco</option>
+        <option value="publix">Publix</option>
+        <option value="meijer">Meijer</option>
+        <option value="sprouts">Sprouts</option>
+        <option value="traderjoes">Trader Joe's</option>
+        <option value="wholefoods">Whole Foods</option>
+        <option value="other">Somewhere else</option>
+      </select>
+
+      <label class="field">Budget</label>
+      <div class="seg" id="budget">
+        <button type="button" data-v="tight">Tight</button>
+        <button type="button" data-v="moderate" class="on">A little wiggle room</button>
+        <button type="button" data-v="flexible">Flexible</button>
+      </div>
+
+      <label class="field">Anything we need to work around?</label>
+      <div class="chips" id="needs">
+        <button type="button" class="chip" data-v="gluten-free">Gluten-free</button>
+        <button type="button" class="chip" data-v="dairy-free">Dairy-free</button>
+        <button type="button" class="chip" data-v="nut-free">Nut-free</button>
+        <button type="button" class="chip" data-v="egg-free">Egg-free</button>
+        <button type="button" class="chip" data-v="feeding young kids">Young kids</button>
+        <button type="button" class="chip" data-v="vegetarian">Vegetarian</button>
+      </div>
+
+      <button class="btn" id="goBtn" onclick="build()">🛒 Build My Clean Cart</button>
+      <div class="msg" id="formMsg"></div>
+    </div>
+  </div>
+
+  <div class="loading" id="loading"><div class="spinner"></div><div id="loadingText">Reading your list…</div></div>
+
+  <div id="results"></div>
+
+  <div class="footer">
+    🌿 Rest &amp; Root Holistic Health LLC · Lindsay Greear, Certified Naturopath<br>
+    Product availability and prices vary by location. For educational purposes only. Not medical advice.
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const KEY_STORE = 'rr_cart_key';
+  const PREFS_STORE = 'rr_cart_prefs';
+  const LAST_STORE = 'rr_cart_last';
+  let lastResult = null;
+
+  function store(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+  function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 2200); }
+
+  async function call(payload) {
+    const r = await fetch('/api/cart', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(data.error || 'Something went wrong. Please try again.'); e.status = r.status; throw e; }
+    return data;
+  }
+
+  function show(id, on) { document.getElementById(id).style.display = on ? 'block' : 'none'; }
+
+  async function unlock(given) {
+    const key = (given || document.getElementById('pw').value || '').trim();
+    const msg = document.getElementById('unlockMsg');
+    msg.textContent = '';
+    if (!key) { msg.textContent = 'Please enter your password.'; return; }
+    try {
+      await call({ key, verify_only: true });
+      store(KEY_STORE, key);
+      startForm();
+    } catch (e) {
+      show('unlock', true);
+      msg.textContent = e.message;
+    }
+  }
+
+  function startForm() {
+    show('unlock', false);
+    show('form', true);
+    const prefs = JSON.parse(read(PREFS_STORE) || '{}');
+    if (prefs.store) document.getElementById('store').value = prefs.store;
+    if (prefs.budget) setSeg(prefs.budget);
+    (prefs.needs || []).forEach(v => { const c = document.querySelector(`#needs .chip[data-v="${v}"]`); if (c) c.classList.add('on'); });
+    const prefill = read('rr_cart_prefill');
+    if (prefill) {
+      document.getElementById('list').value = prefill;
+      document.getElementById('prefillNote').style.display = 'block';
+      store('rr_cart_prefill', null);
+    } else {
+      const last = read(LAST_STORE);
+      if (last) { try { const d = JSON.parse(last); document.getElementById('list').value = d.list || ''; if (d.result) { lastResult = d.result; render(d.result); } } catch (e) {} }
+    }
+  }
+
+  function setSeg(v) { document.querySelectorAll('#budget button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
+  document.querySelectorAll('#budget button').forEach(b => b.addEventListener('click', () => setSeg(b.dataset.v)));
+  document.querySelectorAll('#needs .chip').forEach(c => c.addEventListener('click', () => c.classList.toggle('on')));
+
+  const loadingLines = ['Reading your list…', 'Checking each item against Rest & Root standards…', 'Finding cleaner picks at your store…', 'Keeping it in your budget…', 'Almost done — sorting by aisle…'];
+
+  async function build() {
+    const list = document.getElementById('list').value.trim();
+    const msg = document.getElementById('formMsg');
+    msg.textContent = '';
+    if (!list) { msg.textContent = 'Add a few items to your list first.'; return; }
+    const storeV = document.getElementById('store').value;
+    const budget = (document.querySelector('#budget button.on') || {}).dataset?.v || 'moderate';
+    const needs = [...document.querySelectorAll('#needs .chip.on')].map(c => c.dataset.v);
+    store(PREFS_STORE, JSON.stringify({ store: storeV, budget, needs }));
+
+    const btn = document.getElementById('goBtn');
+    btn.disabled = true;
+    document.getElementById('results').innerHTML = '';
+    show('loading', true);
+    let i = 0;
+    const lt = document.getElementById('loadingText');
+    lt.textContent = loadingLines[0];
+    const timer = setInterval(() => { i = Math.min(i + 1, loadingLines.length - 1); lt.textContent = loadingLines[i]; }, 4000);
+    try {
+      const result = await call({ key: read(KEY_STORE), list, store: storeV, budget, needs });
+      lastResult = result;
+      store(LAST_STORE, JSON.stringify({ list, result }));
+      render(result);
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+      if (e.status === 401) { store(KEY_STORE, null); show('form', false); show('unlock', true); }
+      msg.textContent = e.message;
+    } finally {
+      clearInterval(timer);
+      show('loading', false);
+      btn.disabled = false;
+    }
+  }
+
+  const SECTION_ORDER = ['Produce', 'Meat & Seafood', 'Dairy & Eggs', 'Bakery & Bread', 'Pantry', 'Frozen', 'Snacks', 'Drinks', 'Household', 'Personal Care', 'Other'];
+
+  function render(r) {
+    const items = r.items || [];
+    const swaps = items.filter(x => x.action === 'swap');
+    const keeps = items.length - swaps.length;
+    let html = `<div class="summary"><div class="summary-row"><div class="stat"><b>${keeps}</b><span>Already fine</span></div><div class="stat"><b>${swaps.length}</b><span>Easy swaps</span></div></div>`;
+    if (r.top_three && r.top_three.length) html += `<div style="font-weight:700;font-size:14px;margin-bottom:2px;">If you only change three things:</div><ul class="top3">${r.top_three.slice(0, 3).map(t => `<li>${esc(t)}</li>`).join('')}</ul>`;
+    if (r.budget_note) html += `<div class="note">💰 ${esc(r.budget_note)}</div>`;
+    html += `</div>`;
+
+    const bySection = {};
+    items.forEach((x, idx) => { const s = SECTION_ORDER.includes(x.section) ? x.section : 'Other'; (bySection[s] = bySection[s] || []).push({ ...x, idx }); });
+    SECTION_ORDER.forEach(s => {
+      if (!bySection[s]) return;
+      html += `<div class="section-title">${esc(s)}</div>`;
+      bySection[s].forEach(x => {
+        const isSwap = x.action === 'swap';
+        html += `<div class="item ${isSwap ? 'swap ' + esc(x.priority || '') : ''}" id="it-${x.idx}"><input type="checkbox" aria-label="Got it" onchange="document.getElementById('it-${x.idx}').classList.toggle('done', this.checked)"><div class="item-body">`;
+        if (isSwap) html += `<div class="orig">${esc(x.original)}</div>`;
+        html += `<div class="pick">${esc(x.pick || x.original)}</div>`;
+        if (x.why) html += `<div class="why">${esc(x.why)}</div>`;
+        if (isSwap && x.look_for) html += `<div class="look">🔍 Look for: ${esc(x.look_for)}</div>`;
+        html += `<div class="tags">`;
+        if (isSwap) {
+          if (x.priority === 'high') html += `<span class="tag p-high">Swap first</span>`;
+          if (x.price_change) html += `<span class="tag price">${x.price_change === 'same' ? 'Same price' : x.price_change === 'a bit more' ? 'A bit more' : '$$ More'}</span>`;
+        } else html += `<span class="tag keep">Keep</span>`;
+        html += `</div></div></div>`;
+      });
+    });
+    if (r.encouragement) html += `<div class="card" style="margin-top:16px;"><div class="note">🌿 ${esc(r.encouragement)}</div></div>`;
+    html += `<button class="btn" onclick="copyList()">📋 Copy My Shopping List</button><button class="btn secondary" onclick="newList()">Start a new list</button>`;
+    document.getElementById('results').innerHTML = html;
+  }
+
+  async function copyList() {
+    if (!lastResult) return;
+    const bySection = {};
+    (lastResult.items || []).forEach(x => { const s = SECTION_ORDER.includes(x.section) ? x.section : 'Other'; (bySection[s] = bySection[s] || []).push(x); });
+    let out = 'My Clean Cart 🌿\n';
+    SECTION_ORDER.forEach(s => { if (bySection[s]) { out += `\n${s.toUpperCase()}\n`; bySection[s].forEach(x => { out += `☐ ${x.pick || x.original}\n`; }); } });
+    try { await navigator.clipboard.writeText(out); toast('Copied! Paste it into your notes app.'); }
+    catch (e) { toast('Could not copy — try again.'); }
+  }
+
+  function newList() {
+    store(LAST_STORE, null);
+    lastResult = null;
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('list').value = '';
+    document.getElementById('prefillNote').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  (function init() {
+    const params = new URLSearchParams(location.search);
+    const fromLink = params.get('key');
+    if (fromLink) { history.replaceState(null, '', location.pathname); unlock(fromLink); return; }
+    if (read(KEY_STORE)) startForm(); else show('unlock', true);
+  })();
+</script>
+</body>
+</html>

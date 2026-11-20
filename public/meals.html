@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clean Meal Planner</title>
+<meta name="theme-color" content="#5C3D2E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Meal Planner">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+  :root {
+    --cream: #FAF6F0; --sage: #7A9E7E; --deep-sage: #4A6E4E; --brown: #5C3D2E; --blush: #C9A882;
+    --light-sage: #EEF4EE; --red: #C0392B; --yellow: #E67E22; --warm-brown: #8B6F5C; --line: #E8E0D8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--cream); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--brown); min-height: 100vh; }
+  .header { background: var(--brown); padding: 20px 24px; text-align: center; }
+  .header h1 { font-family: Georgia, serif; font-size: 26px; color: var(--cream); font-weight: 600; margin-bottom: 4px; }
+  .header p { color: var(--blush); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
+  .tool-nav { display: flex; justify-content: center; gap: 6px; padding: 10px 12px; background: #4E3326; flex-wrap: wrap; }
+  .tool-nav a { color: var(--cream); text-decoration: none; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 20px; opacity: 0.8; }
+  .tool-nav a.active { background: var(--sage); opacity: 1; }
+  .main { max-width: 600px; margin: 0 auto; padding: 24px 16px 60px; }
+  .card { background: white; border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  .intro { font-size: 14px; line-height: 1.6; color: var(--warm-brown); margin-bottom: 18px; }
+  label.field { display: block; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--warm-brown); margin: 16px 0 8px; }
+  label.field:first-child { margin-top: 0; }
+  input[type=password], input[type=text] { width: 100%; padding: 12px 14px; font-size: 15px; font-family: inherit; border: 1px solid #ddd; border-radius: 10px; background: white; color: var(--brown); }
+  input:focus { outline: none; border-color: var(--sage); }
+  .row2 { display: flex; gap: 12px; }
+  .row2 > div { flex: 1; }
+  .stepper { display: flex; align-items: center; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; background: white; }
+  .stepper button { width: 44px; height: 44px; border: none; background: var(--light-sage); color: var(--deep-sage); font-size: 20px; font-weight: 700; cursor: pointer; }
+  .stepper span { flex: 1; text-align: center; font-size: 17px; font-weight: 700; }
+  .seg { display: flex; border: 1px solid var(--sage); border-radius: 10px; overflow: hidden; }
+  .seg button { flex: 1; padding: 11px 4px; border: none; background: white; color: var(--brown); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .seg button.on { background: var(--sage); color: white; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 8px 12px; border-radius: 20px; border: 1px solid #D0C4B8; background: white; color: var(--brown); font-size: 13px; font-family: inherit; cursor: pointer; }
+  .chip.on { background: var(--light-sage); border-color: var(--sage); color: var(--deep-sage); font-weight: 600; }
+  .toggle { display: flex; align-items: center; gap: 10px; font-size: 14px; margin-top: 16px; cursor: pointer; }
+  .toggle input { width: 20px; height: 20px; accent-color: var(--sage); }
+  .hint { font-size: 12px; color: var(--warm-brown); margin-top: 6px; line-height: 1.5; }
+  .btn { width: 100%; padding: 15px; font-size: 15px; font-weight: 700; font-family: inherit; border: none; border-radius: 10px; background: var(--sage); color: white; cursor: pointer; margin-top: 18px; }
+  .btn:disabled { opacity: 0.6; cursor: wait; }
+  .btn.brown { background: var(--brown); }
+  .btn.secondary { background: white; color: var(--brown); border: 1px solid #D0C4B8; margin-top: 10px; }
+  .msg { font-size: 13px; margin-top: 10px; color: var(--red); }
+  .loading { text-align: center; padding: 30px 10px; color: var(--deep-sage); font-size: 14px; display: none; }
+  .spinner { width: 34px; height: 34px; border: 3px solid var(--light-sage); border-top-color: var(--sage); border-radius: 50%; margin: 0 auto 12px; animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .section-title { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--warm-brown); font-weight: 700; margin: 22px 0 10px; }
+  .meal { background: white; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+  .meal-head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px; background: none; border: none; text-align: left; font-family: inherit; color: var(--brown); cursor: pointer; }
+  .day { flex: 0 0 auto; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: white; background: var(--sage); border-radius: 8px; padding: 6px 8px; }
+  .meal-name { flex: 1; font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .meal-min { font-size: 12px; color: var(--warm-brown); white-space: nowrap; }
+  .meal-body { display: none; padding: 0 16px 16px; border-top: 1px solid #F0EBE6; }
+  .meal.open .meal-body { display: block; }
+  .meal-body h4 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--warm-brown); margin: 14px 0 6px; }
+  .meal-body ul, .meal-body ol { padding-left: 20px; font-size: 14px; line-height: 1.6; }
+  .kid { font-size: 13px; background: #FFF8F0; border-radius: 8px; padding: 8px 10px; margin-top: 12px; line-height: 1.5; }
+  .lunch { font-size: 13px; background: var(--light-sage); color: var(--deep-sage); border-radius: 8px; padding: 8px 10px; margin-top: 8px; line-height: 1.5; }
+  .shop-item { display: flex; align-items: center; gap: 10px; background: white; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; font-size: 14px; }
+  .shop-item input { width: 20px; height: 20px; accent-color: var(--sage); }
+  .shop-item.done span { text-decoration: line-through; opacity: 0.55; }
+  .shop-item small { color: var(--warm-brown); margin-left: auto; white-space: nowrap; }
+  .note { font-size: 13px; color: var(--deep-sage); line-height: 1.6; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--brown); color: white; padding: 12px 20px; border-radius: 24px; font-size: 14px; display: none; z-index: 10; }
+  .footer { text-align: center; font-size: 11px; color: var(--warm-brown); margin-top: 30px; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Clean Meal Planner</h1>
+  <p>Rest &amp; Root Holistic Health</p>
+</div>
+<nav class="tool-nav">
+  <a href="/scanner">🔍 Scanner</a>
+  <a href="/cart">🛒 Cart Builder</a>
+  <a href="/meals" class="active">🍽️ Meal Planner</a>
+</nav>
+
+<div class="main">
+
+  <div id="unlock" class="card" style="display:none;">
+    <div style="font-family:Georgia,serif;font-size:20px;margin-bottom:8px;">Unlock your Meal Planner</div>
+    <p class="intro" style="margin-bottom:12px;">Enter the Meal Planner password from your email from Lindsay.</p>
+    <input type="password" id="pw" placeholder="Meal Planner password" autocomplete="off">
+    <button class="btn" onclick="unlock()">Unlock</button>
+    <div class="msg" id="unlockMsg"></div>
+    <p class="hint" style="margin-top:14px;">Can't find it? Search your inbox for "Clean Meal Planner" or email <a href="mailto:lindsay@restandrootholistic.com" style="color:var(--deep-sage);">lindsay@restandrootholistic.com</a>.</p>
+  </div>
+
+  <div id="form" style="display:none;">
+    <p class="intro">Tell me about your crew and your week. I'll plan simple, clean dinners your family will actually eat, plus one shopping list for all of it.</p>
+    <div class="card">
+      <div class="row2">
+        <div><label class="field">Adults</label><div class="stepper" data-id="adults" data-min="1" data-max="8"><button type="button">−</button><span>2</span><button type="button">+</button></div></div>
+        <div><label class="field">Kids</label><div class="stepper" data-id="kids" data-min="0" data-max="8"><button type="button">−</button><span>2</span><button type="button">+</button></div></div>
+      </div>
+
+      <label class="field">Dinners this week</label>
+      <div class="seg" id="dinners">
+        <button type="button" data-v="3">3</button><button type="button" data-v="4">4</button><button type="button" data-v="5" class="on">5</button><button type="button" data-v="6">6</button><button type="button" data-v="7">7</button>
+      </div>
+
+      <label class="field">Hands-on cooking time</label>
+      <div class="seg" id="minutes">
+        <button type="button" data-v="15">15 min</button><button type="button" data-v="30" class="on">30 min</button><button type="button" data-v="45">45 min</button>
+      </div>
+
+      <label class="field">Budget</label>
+      <div class="seg" id="budget">
+        <button type="button" data-v="tight">Tight</button><button type="button" data-v="moderate" class="on">Some wiggle room</button><button type="button" data-v="flexible">Flexible</button>
+      </div>
+
+      <label class="field">Anything we need to work around?</label>
+      <div class="chips" id="needs">
+        <button type="button" class="chip" data-v="gluten-free">Gluten-free</button>
+        <button type="button" class="chip" data-v="dairy-free">Dairy-free</button>
+        <button type="button" class="chip" data-v="nut-free">Nut-free</button>
+        <button type="button" class="chip" data-v="egg-free">Egg-free</button>
+        <button type="button" class="chip" data-v="vegetarian">Vegetarian</button>
+      </div>
+
+      <label class="field" for="dislikes">Foods your family won't eat</label>
+      <input type="text" id="dislikes" placeholder="e.g. mushrooms, spicy food, fish">
+
+      <label class="toggle"><input type="checkbox" id="lunches"> Add easy lunch ideas too</label>
+
+      <button class="btn" id="goBtn" onclick="plan()">🍽️ Plan My Week</button>
+      <div class="msg" id="formMsg"></div>
+      <p class="hint">Always check labels for allergens. This plan follows your choices above, but brands can change their recipes.</p>
+    </div>
+  </div>
+
+  <div class="loading" id="loading"><div class="spinner"></div><div id="loadingText">Planning your week…</div></div>
+
+  <div id="results"></div>
+
+  <div class="footer">
+    🌿 Rest &amp; Root Holistic Health LLC · Lindsay Greear, Certified Naturopath<br>
+    For educational purposes only. Not medical or nutrition therapy advice.
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const KEY_STORE = 'rr_meals_key';
+  const PREFS_STORE = 'rr_meals_prefs';
+  const LAST_STORE = 'rr_meals_last';
+  const SECTION_ORDER = ['Produce', 'Meat & Seafood', 'Dairy & Eggs', 'Bakery & Bread', 'Pantry', 'Frozen', 'Snacks', 'Drinks', 'Other'];
+  let lastPlan = null;
+
+  function store(k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+  function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 2200); }
+  function show(id, on) { document.getElementById(id).style.display = on ? 'block' : 'none'; }
+
+  async function call(payload) {
+    const r = await fetch('/api/meals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(data.error || 'Something went wrong. Please try again.'); e.status = r.status; throw e; }
+    return data;
+  }
+
+  async function unlock(given) {
+    const key = (given || document.getElementById('pw').value || '').trim();
+    const msg = document.getElementById('unlockMsg');
+    msg.textContent = '';
+    if (!key) { msg.textContent = 'Please enter your password.'; return; }
+    try { await call({ key, verify_only: true }); store(KEY_STORE, key); startForm(); }
+    catch (e) { show('unlock', true); msg.textContent = e.message; }
+  }
+
+  // Controls
+  document.querySelectorAll('.stepper').forEach(s => {
+    const [minus, val, plus] = [s.children[0], s.children[1], s.children[2]];
+    const min = +s.dataset.min, max = +s.dataset.max;
+    minus.onclick = () => { val.textContent = Math.max(min, +val.textContent - 1); };
+    plus.onclick = () => { val.textContent = Math.min(max, +val.textContent + 1); };
+  });
+  function segVal(id) { return (document.querySelector(`#${id} button.on`) || {}).dataset?.v; }
+  function setSeg(id, v) { document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle('on', b.dataset.v === String(v))); }
+  ['dinners', 'minutes', 'budget'].forEach(id => document.querySelectorAll(`#${id} button`).forEach(b => b.addEventListener('click', () => setSeg(id, b.dataset.v))));
+  document.querySelectorAll('#needs .chip').forEach(c => c.addEventListener('click', () => c.classList.toggle('on')));
+  function stepVal(id) { return +document.querySelector(`.stepper[data-id="${id}"] span`).textContent; }
+  function setStep(id, v) { document.querySelector(`.stepper[data-id="${id}"] span`).textContent = v; }
+
+  function startForm() {
+    show('unlock', false); show('form', true);
+    const p = JSON.parse(read(PREFS_STORE) || '{}');
+    if (p.adults != null) setStep('adults', p.adults);
+    if (p.kids != null) setStep('kids', p.kids);
+    ['dinners', 'minutes', 'budget'].forEach(id => { if (p[id]) setSeg(id, p[id]); });
+    (p.needs || []).forEach(v => { const c = document.querySelector(`#needs .chip[data-v="${v}"]`); if (c) c.classList.add('on'); });
+    if (p.dislikes) document.getElementById('dislikes').value = p.dislikes;
+    document.getElementById('lunches').checked = !!p.lunches;
+    try { const last = JSON.parse(read(LAST_STORE) || 'null'); if (last) { lastPlan = last; render(last); } } catch (e) {}
+  }
+
+  const loadingLines = ['Planning your week…', 'Picking meals your kids will actually eat…', 'Keeping it simple and clean…', 'Combining everything into one shopping list…', 'Almost ready — this one takes about a minute…'];
+
+  async function plan() {
+    const msg = document.getElementById('formMsg');
+    msg.textContent = '';
+    const opts = {
+      adults: stepVal('adults'), kids: stepVal('kids'),
+      dinners: +segVal('dinners') || 5, minutes: +segVal('minutes') || 30, budget: segVal('budget') || 'moderate',
+      needs: [...document.querySelectorAll('#needs .chip.on')].map(c => c.dataset.v),
+      dislikes: document.getElementById('dislikes').value.trim(),
+      lunches: document.getElementById('lunches').checked,
+    };
+    store(PREFS_STORE, JSON.stringify(opts));
+    const btn = document.getElementById('goBtn');
+    btn.disabled = true;
+    document.getElementById('results').innerHTML = '';
+    show('loading', true);
+    let i = 0; const lt = document.getElementById('loadingText'); lt.textContent = loadingLines[0];
+    const timer = setInterval(() => { i = Math.min(i + 1, loadingLines.length - 1); lt.textContent = loadingLines[i]; }, 6000);
+    try {
+      const result = await call({ key: read(KEY_STORE), ...opts });
+      lastPlan = result;
+      store(LAST_STORE, JSON.stringify(result));
+      render(result);
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+      if (e.status === 401) { store(KEY_STORE, null); show('form', false); show('unlock', true); }
+      msg.textContent = e.message;
+    } finally { clearInterval(timer); show('loading', false); btn.disabled = false; }
+  }
+
+  function render(p) {
+    let html = `<div class="section-title">Your week</div>`;
+    (p.meals || []).forEach((m, i) => {
+      html += `<div class="meal" id="meal-${i}"><button class="meal-head" onclick="document.getElementById('meal-${i}').classList.toggle('open')"><span class="day">${esc((m.day || 'Day ' + (i + 1)).replace(/^Day\s*/i, 'Day '))}</span><span class="meal-name">${esc(m.name)}</span><span class="meal-min">${m.minutes ? esc(m.minutes) + ' min' : ''} ▾</span></button><div class="meal-body">`;
+      if (m.ingredients && m.ingredients.length) html += `<h4>Ingredients</h4><ul>${m.ingredients.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+      if (m.steps && m.steps.length) html += `<h4>Steps</h4><ol>${m.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`;
+      if (m.kid_tip) html += `<div class="kid">👧 ${esc(m.kid_tip)}</div>`;
+      if (m.lunch) html += `<div class="lunch">🥪 Lunch: ${esc(m.lunch)}</div>`;
+      html += `</div></div>`;
+    });
+    if (p.prep_ahead) html += `<div class="card" style="margin-top:12px;"><div class="note">⏱️ <strong>Sunday prep:</strong> ${esc(p.prep_ahead)}</div></div>`;
+
+    const by = {};
+    (p.shopping_list || []).forEach((x, idx) => { const s = SECTION_ORDER.includes(x.section) ? x.section : 'Other'; (by[s] = by[s] || []).push({ ...x, idx }); });
+    html += `<div class="section-title">Shopping list</div>`;
+    SECTION_ORDER.forEach(s => {
+      if (!by[s]) return;
+      html += `<div style="font-size:12px;font-weight:700;color:var(--deep-sage);margin:12px 0 6px;">${esc(s)}</div>`;
+      by[s].forEach(x => { html += `<label class="shop-item" id="si-${x.idx}"><input type="checkbox" onchange="document.getElementById('si-${x.idx}').classList.toggle('done', this.checked)"><span>${esc(x.item)}</span><small>${esc(x.amount || '')}</small></label>`; });
+    });
+    if (p.pantry_staples && p.pantry_staples.length) html += `<p class="hint" style="margin-top:10px;">From your pantry: ${p.pantry_staples.map(esc).join(', ')}</p>`;
+
+    html += `<button class="btn brown" onclick="sendToCart()">🛒 Send to Cart Builder</button><p class="hint" style="text-align:center;">Get the cleanest version of every item at your store.</p>`;
+    html += `<button class="btn secondary" onclick="copyList()">📋 Copy shopping list</button><button class="btn secondary" onclick="newPlan()">Plan a new week</button>`;
+    if (p.encouragement) html += `<div class="card" style="margin-top:16px;"><div class="note">🌿 ${esc(p.encouragement)}</div></div>`;
+    document.getElementById('results').innerHTML = html;
+  }
+
+  function listText(withChecks) {
+    const by = {};
+    (lastPlan.shopping_list || []).forEach(x => { const s = SECTION_ORDER.includes(x.section) ? x.section : 'Other'; (by[s] = by[s] || []).push(x); });
+    let out = '';
+    SECTION_ORDER.forEach(s => { if (by[s]) { if (withChecks) out += `\n${s.toUpperCase()}\n`; by[s].forEach(x => { out += `${withChecks ? '☐ ' : ''}${x.item}${x.amount ? ' (' + x.amount + ')' : ''}\n`; }); } });
+    return out;
+  }
+
+  function sendToCart() {
+    if (!lastPlan) return;
+    store('rr_cart_prefill', listText(false));
+    location.href = '/cart';
+  }
+
+  async function copyList() {
+    if (!lastPlan) return;
+    try { await navigator.clipboard.writeText('This week\'s shopping list 🌿\n' + listText(true)); toast('Copied! Paste it into your notes app.'); }
+    catch (e) { toast('Could not copy — try again.'); }
+  }
+
+  function newPlan() {
+    store(LAST_STORE, null); lastPlan = null;
+    document.getElementById('results').innerHTML = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  (function init() {
+    const params = new URLSearchParams(location.search);
+    const fromLink = params.get('key');
+    if (fromLink) { history.replaceState(null, '', location.pathname); unlock(fromLink); return; }
+    if (read(KEY_STORE)) startForm(); else show('unlock', true);
+  })();
+</script>
+</body>
+</html>

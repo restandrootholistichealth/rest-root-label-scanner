@@ -1,5 +1,6 @@
 // api/systeme-webhook.js
-// Receives purchase webhooks from Systeme.io and emails the scanner password.
+// Receives purchase webhooks from Systeme.io and emails the scanner password
+// (plus Cart Builder / Meal Planner passwords when those add-ons are bought).
 // Modeled on the old samcart-webhook.js — same shared-password email flow,
 // just adapted to Systeme.io's webhook payload shape.
 //
@@ -130,6 +131,64 @@ async function sendPasswordEmail(email, name) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Add-on tools (Clean Cart Builder order bump, Clean Meal Planner upsell).
+// Each has its own shared password, checked by api/cart.js and api/meals.js.
+// The "match" text must appear in the Systeme.io product or price plan name.
+// ---------------------------------------------------------------------------
+const ADDONS = [
+  {
+    match: 'cart builder',
+    name: 'Clean Cart Builder',
+    password: 'CleanCart2026',
+    url: 'https://restandrootholistic.com/cart?key=CleanCart2026',
+    button: 'Open Your Cart Builder →',
+    intro: 'Paste your normal grocery list, pick your store and budget, and it shows you what is already fine, what to swap, and exactly what to grab — without blowing your budget.',
+  },
+  {
+    match: 'meal planner',
+    name: 'Clean Meal Planner',
+    password: 'RootMeals2026',
+    url: 'https://restandrootholistic.com/meals?key=RootMeals2026',
+    button: 'Open Your Meal Planner →',
+    intro: 'Tell it about your crew and your week, and it plans simple, clean dinners your family will actually eat, plus one shopping list you can send straight to your Cart Builder.',
+  },
+];
+
+async function sendAddonEmail(email, name, addon) {
+  const firstName = name ? name.split(' ')[0] : 'there';
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#FAF6F0;font-family:Arial,sans-serif;">
+<div style="max-width:560px;margin:0 auto;padding:40px 20px;"><div style="background:white;border-radius:16px;padding:40px;">
+<div style="font-size:32px;text-align:center;margin-bottom:8px;">🌿</div>
+<div style="text-align:center;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#7A9E7E;margin-bottom:24px;">Rest &amp; Root Holistic Health</div>
+<h1 style="font-size:24px;color:#5C3D2E;text-align:center;margin:0 0 16px;">Your ${addon.name} is ready, ${firstName}!</h1>
+<p style="font-size:15px;color:#8B6F5C;line-height:1.6;">${addon.intro}</p>
+<div style="background:#EEF4EE;border:2px dashed #7A9E7E;border-radius:12px;padding:20px;text-align:center;margin:24px 0;">
+<div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#7A9E7E;margin-bottom:8px;">Your ${addon.name} Password</div>
+<div style="font-size:24px;font-weight:bold;color:#5C3D2E;letter-spacing:0.1em;">${addon.password}</div></div>
+<a href="${addon.url}" style="display:block;background:#7A9E7E;color:white;text-decoration:none;text-align:center;padding:16px 24px;border-radius:12px;font-size:15px;font-weight:bold;margin:24px 0;">${addon.button}</a>
+<p style="font-size:15px;color:#8B6F5C;line-height:1.6;">The button unlocks it for you automatically. On a new phone or computer, just enter the password above.</p>
+<p style="font-size:15px;color:#8B6F5C;line-height:1.6;">Questions? Just reply to this email — I read every one.</p>
+<p style="font-size:15px;color:#8B6F5C;line-height:1.6;margin-top:24px;">With love,<br><strong>Lindsay</strong><br><span style="color:#7A9E7E;font-size:13px;">Certified Naturopath + HTMA Practitioner<br>Rest &amp; Root Holistic Health</span></p>
+<p style="text-align:center;font-size:12px;color:#8B6F5C;margin-top:24px;">Save this email — your password lives here.</p>
+</div></div></body></html>`;
+
+  const result = await resend.emails.send({
+    from: 'Lindsay | Rest & Root <lindsay@mail.restandrootholistic.com>',
+    replyTo: 'restandrootholistichealth@gmail.com',
+    to: email,
+    subject: `🌿 Your ${addon.name} is ready!`,
+    html,
+  });
+  if (result?.error) {
+    console.error(`=== ${addon.name} EMAIL FAILED ===`, JSON.stringify(result.error));
+    throw new Error(result.error.message || 'Resend returned an error');
+  }
+  console.log(`=== ${addon.name} EMAIL SENT ===`, JSON.stringify(result));
+  return result;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -156,9 +215,11 @@ export default async function handler(req, res) {
     // "Label Scanner - Monthly" / "Label Scanner - Annual", so this should
     // catch it regardless of which exact field systeme.io puts the name in).
     const payloadText = JSON.stringify(body).toLowerCase();
-    if (!payloadText.includes('label scanner')) {
-      console.log('Sale is not for the Label Scanner — skipping password email.');
-      return res.status(200).json({ success: true, message: 'Not a Label Scanner sale — skipped' });
+    const isScanner = payloadText.includes('label scanner');
+    const addonsBought = ADDONS.filter(a => payloadText.includes(a.match));
+    if (!isScanner && addonsBought.length === 0) {
+      console.log('Sale is not for the Label Scanner or its add-ons — skipping password email.');
+      return res.status(200).json({ success: true, message: 'Not a scanner or add-on sale — skipped' });
     }
 
     // Systeme.io payload shapes vary by trigger type — check several
@@ -190,19 +251,28 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log(`Sending password email to ${email}`);
+    // Systeme.io may send one webhook for the whole order (scanner + bump) or
+    // one per product. Each email goes out for whatever product this payload
+    // names. Worst case, a buyer gets the scanner email twice — harmless.
+    const sent = [];
+    const failed = [];
 
-    try {
-      await sendPasswordEmail(email, name);
-      console.log(`Password email sent successfully to ${email}`);
-      return res.status(200).json({ success: true, message: 'Password email sent' });
-    } catch (emailErr) {
-      console.error('Email error:', emailErr);
-      return res.status(200).json({
-        success: true,
-        message: 'Email failed — check logs',
-      });
+    if (isScanner) {
+      try { await sendPasswordEmail(email, name); sent.push('Label Scanner'); }
+      catch (e) { console.error('Scanner email error:', e); failed.push('Label Scanner'); }
     }
+    for (const addon of addonsBought) {
+      try { await sendAddonEmail(email, name, addon); sent.push(addon.name); }
+      catch (e) { console.error(`${addon.name} email error:`, e); failed.push(addon.name); }
+    }
+
+    console.log(`Emails to ${email} — sent: [${sent.join(', ')}] failed: [${failed.join(', ')}]`);
+    return res.status(200).json({
+      success: true,
+      message: failed.length ? 'Some emails failed — check logs' : 'Emails sent',
+      sent,
+      failed,
+    });
 
   } catch (err) {
     console.error('Webhook handler error:', err);
