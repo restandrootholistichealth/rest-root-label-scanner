@@ -260,61 +260,148 @@ function detectCombinations(flags) {
 }
 
 // ---------------------------------------------------------------------------
-// Hard rules enforced in code, because the AI does not always follow the
-// prompt (e.g. it once rated Chanel No. 5's parfum as safe -> score 96).
+// INGREDIENT RULEBOOK — enforced in code, not left to the AI.
+// The AI does not always follow the prompt (it once rated Chanel No. 5 at 96),
+// so after every scan the label text itself is checked against these lists
+// and every match gets at least the risk below, whatever the AI said.
+//
+// Sources:
+//  - Campaign for Safe Cosmetics "Red List" of chemicals of concern
+//    (Tier 1 "Do Not Use", 1B PFAS, 1C nonylphenols, 1D formaldehyde
+//    releasers, 1E phthalates) -> AVOID
+//    https://www.safecosmetics.org/wp-content/uploads/2024/04/Campaign-for-Safe-Cosmetics-red-list-do-not-use-list-chemicals.pdf
+//  - Rest & Root red-flag list (fragrance, dyes, SLS, artificial sweeteners,
+//    nitrites, etc.) -> AVOID
+//  - EU-disclosed fragrance allergens and Red List Tier 2/3 irritants -> CAUTION
 // ---------------------------------------------------------------------------
-const ALWAYS_AVOID = [
-  /\b(fragrance|parfum|perfume)\b/, /paraben/, /phthalate/,
-  /dmdm hydantoin|diazolidinyl urea|imidazolidinyl urea|quaternium-15/,
-  /oxybenzone|benzophenone/, /triclosan|triclocarban/,
-  /sodium laur(yl|eth) sulfate|\bsls\b|\bsles\b/,
-  /\bbha\b|\bbht\b|butylated hydroxy/, /\btbhq\b|tertiary butylhydroquinone/,
-  /red (no\.? ?)?(3|40)\b|yellow (no\.? ?)?(5|6)\b|blue (no\.? ?)?(1|2)\b|green (no\.? ?)?3\b/,
-  /high fructose corn syrup|\bhfcs\b/, /sucralose|aspartame|acesulfame|saccharin|neotame/,
-  /sodium nitr(ate|ite)/, /partially hydrogenated/, /potassium bromate|azodicarbonamide|brominated vegetable oil/,
-  /carrageenan/, /propylene glycol/, /butylphenyl methylpropional|\blilial\b/,
+const AVOID_RULES = [
+  // Fragrance
+  { rx: /\b(fragrance|parfum|perfume|aroma)\b(?!\s*-?\s*free)/, why: 'One word on the label that can legally hide dozens of undisclosed chemicals, including some linked to hormone disruption.' },
+  // Synthetic dyes: FD&C / D&C colors, "Red 40 Lake", and Color Index numbers
+  // CI 10000-69999 (synthetic). Mineral (CI 77xxx) and plant (CI 75xxx) colors are excluded.
+  { rx: /\b(fd&c|d&c)\s+(red|yellow|blue|green|orange|violet|black)\b/, why: 'A synthetic petroleum-based dye — Rest & Root avoids all artificial colors.' },
+  { rx: /\b(red|yellow|blue|green|orange|violet)\s+(no\.?\s*)?\d{1,2}\b(\s+lake)?/, why: 'A synthetic petroleum-based dye — Rest & Root avoids all artificial colors.' },
+  { rx: /\bc\.?\s?i\.?\s*[1-6]\d{4}\b/, why: 'A synthetic dye listed by its Color Index number — Rest & Root avoids all artificial colors.' },
+  { rx: /\b(artificial (colou?rs?|dyes?)|colou?r added)\b/, why: 'Artificial dyes — Rest & Root avoids all artificial colors.' },
+  // Preservatives
+  { rx: /paraben/, why: 'A preservative on the Campaign for Safe Cosmetics Red List, linked to hormone disruption in research.' },
+  { rx: /dmdm hydantoin|mdm hydantoin|diazolidinyl urea|imidazolidinyl urea|quaternium-15|bronopol|2-bromo-2-nitropropane|sodium hydroxymethylglycinate|bronidox|methenamine|glyoxal|formaldehyde|formalin|methylene glycol|paraformaldehyde/, why: 'A formaldehyde-releasing preservative — on the Campaign for Safe Cosmetics Red List.' },
+  { rx: /\btriclosan\b|\btriclocarban\b/, why: 'An antibacterial on the Campaign for Safe Cosmetics Red List, linked to hormone disruption.' },
+  { rx: /\bbha\b|\bbht\b|butylated hydroxy(anisole|toluene)|\btbhq\b|tert(iary)?-?butylhydroquinone/, why: 'A synthetic preservative on the Campaign for Safe Cosmetics Red List.' },
+  // Plasticizers, PFAS, solvents
+  { rx: /phthalate|\bdep\b|\bdbp\b|\bdehp\b/, why: 'A phthalate — a plasticizer on the Campaign for Safe Cosmetics Red List, linked to hormone disruption.' },
+  { rx: /perfluoro|polyfluoro|\bptfe\b|polytetrafluoroethylene|fluoroalcohol|trifluoro|pentafluoro|decafluoro|octafluoro|tetrafluoro|\bpfoa\b/, why: 'A PFAS "forever chemical" — on the Campaign for Safe Cosmetics Red List.' },
+  { rx: /nonylphenol|nonoxynol|octoxynol|octylphenol/, why: 'An alkylphenol on the Campaign for Safe Cosmetics Red List.' },
+  { rx: /\b(toluene|benzene|xylene|styrene|naphthalene|coal tar|1,4-dioxane|ethylene oxide)\b/, why: 'A solvent or contaminant on the Campaign for Safe Cosmetics Red List.' },
+  { rx: /cyclotetrasiloxane|cyclopentasiloxane|cyclohexasiloxane|\bd4\b|\bd5\b|\bd6\b/, why: 'A cyclic silicone (D4/D5/D6) on the Campaign for Safe Cosmetics Red List.' },
+  // Sunscreen filters & other Red List items
+  { rx: /oxybenzone|benzophenone|octinoxate|ethylhexyl methoxycinnamate|homosalate|octyl dimethyl paba|benzylidene camphor/, why: 'A chemical UV filter on the Campaign for Safe Cosmetics Red List, linked to hormone disruption.' },
+  { rx: /benzyl salicylate|isoeugenol|methyleugenol|methyl salicylate|butylphenyl methylpropional|\blilial\b|galaxolide|tonalide|musk ketone|musk xylene|\bestragole\b|\bsafrole\b|\bpulegone\b/, why: 'A fragrance chemical on the Campaign for Safe Cosmetics "Do Not Use" Red List.' },
+  { rx: /\b(diethanolamine|triethanolamine|monoethanolamine|cocamide dea|cocamide mea|lauramide dea)\b|\btea-lauryl|\bdea-cetyl/, why: 'An ethanolamine on the Campaign for Safe Cosmetics Red List.' },
+  { rx: /\bhydroquinone\b|\bresorcinol\b|p-phenylenediamine|\bmercury\b|thimerosal|lead acetate|\bpeg-23m\b|ethylene glycol(?! distearate)|diethylene glycol|butoxyethanol|\bmethanol\b/, why: 'On the Campaign for Safe Cosmetics "Do Not Use" Red List.' },
+  // Rest & Root red flags (food + personal care)
+  { rx: /sodium laur(yl|eth) sulfate|\bsls\b|\bsles\b|ammonium laur(yl|eth) sulfate/, why: 'A harsh sulfate detergent that strips the skin barrier.' },
+  { rx: /propylene glycol|\bpeg-\d+|polyethylene glycol/, why: 'A petroleum-derived ingredient on the Rest & Root avoid list.' },
+  { rx: /high fructose corn syrup|\bhfcs\b/, why: 'High fructose corn syrup — on the Rest & Root avoid list.' },
+  { rx: /sucralose|aspartame|acesulfame|\bace-k\b|saccharin|neotame|advantame/, why: 'An artificial sweetener — on the Rest & Root avoid list.' },
+  { rx: /sodium nitr(ate|ite)|potassium nitr(ate|ite)/, why: 'A curing chemical in processed meat — on the Rest & Root avoid list.' },
+  { rx: /partially hydrogenated|potassium bromate|azodicarbonamide|brominated vegetable oil|\bbvo\b|carrageenan|monosodium glutamate|\bmsg\b|disodium (inosinate|guanylate)/, why: 'On the Rest & Root avoid list.' },
+  { rx: /benzalkonium chloride|\bquats?\b|sodium hypochlorite|\bammonia\b/, why: 'A harsh chemical on the Rest & Root avoid list.' },
 ];
-// Fragrance allergens that must be disclosed on EU labels — at least CAUTION
-const FRAGRANCE_ALLERGENS = /\b(limonene|linalool|citronellol|geraniol|coumarin|eugenol|isoeugenol|hydroxycitronellal|alpha-isomethyl ionone|benzyl salicylate|benzyl benzoate|benzyl alcohol|benzyl cinnamate|cinnamal|cinnamyl alcohol|citral|farnesol|hexyl cinnamal|amyl cinnamal|amylcinnamyl alcohol|anise alcohol|evernia prunastri|oakmoss|treemoss|methyl 2-octynoate)\b/;
+
+const CAUTION_RULES = [
+  // EU-disclosed fragrance allergens (and Red List Tier 2/3 fragrance materials)
+  { rx: /\b(limonene|d-limonene|linalool|citronellol|geraniol|coumarin|eugenol|hydroxycitronellal|alpha-isomethyl ionone|benzyl benzoate|benzyl alcohol|benzyl cinnamate|cinnamal|cinnamyl alcohol|citral|farnesol|hexyl cinnamal|amyl cinnamal|amylcinnamyl alcohol|anise alcohol|anisyl alcohol|evernia prunastri|oakmoss|treemoss|methyl 2-octynoate|iso e super|alpha-pinene|beta-pinene)\b/, why: 'A known fragrance allergen — one of the ingredients the EU requires labels to disclose because it commonly causes skin reactions.' },
+  { rx: /methylisothiazolinone|methylchloroisothiazolinone|iodopropynyl butylcarbamate|\bipbc\b/, why: 'A preservative known for causing skin allergies (Campaign for Safe Cosmetics Red List, Tier 2).' },
+  { rx: /phenoxyethanol|ethylhexylglycerin|sodium benzoate|potassium sorbate/, why: 'A synthetic preservative. Look for products preserved with rosemary extract or vitamin E instead.' },
+  { rx: /butyl methoxydibenzoylmethane|avobenzone|octocrylene/, why: 'A chemical UV filter. Mineral (zinc oxide) sunscreen is the cleaner choice.' },
+  { rx: /mineral oil|paraffinum liquidum|petrolatum|petroleum jelly/, why: 'A petroleum derivative (Campaign for Safe Cosmetics Red List, Tier 2).' },
+  { rx: /dimethicone|carbomer|polysorbate|tetrasodium edta|disodium edta|calcium disodium edta|\btalc\b|aluminum (chloro|zirconium)/, why: 'A synthetic ingredient worth minimizing.' },
+];
+
+function labelSegments(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/^\s*ingredients?\s*:/, '')
+    .split(/[,;•\n]|\.\s+|\s+and\/or\s+/)
+    .map(s => {
+      s = s.trim().replace(/^(and|or|contains|including|may contain)\s+/, '').replace(/\.+$/, '').trim();
+      // Trim only unbalanced brackets: "(yellow 6" -> "yellow 6", "red 40)" -> "red 40",
+      // but keep "ci 19140 (yellow 5)" intact.
+      const open = (s.match(/\(/g) || []).length, close = (s.match(/\)/g) || []).length;
+      if (close > open) s = s.replace(/\)+$/, '');
+      if (open > close) s = s.endsWith(')') ? s : s.replace(/^\(+/, '') + (s.startsWith('(') ? '' : ')');
+      return s.replace(/^\((.*)\)$/, '$1').trim();
+    })
+    .filter(s => s.length > 1 && s.length < 120);
+}
+
+function titleCase(s) {
+  return s.replace(/\b[a-z]/g, c => c.toUpperCase()).replace(/\bCi\b/g, 'CI').replace(/\bFd&c\b/g, 'FD&C').replace(/\bD&c\b/g, 'D&C');
+}
+
+function ruleFor(name) {
+  const n = String(name || '').toLowerCase();
+  if (/\b(free|claim|greenwash\w*|misleading|unscented)\b/.test(n)) return null; // claim flags, e.g. "fragrance-free claim"
+  const a = AVOID_RULES.find(r => r.rx.test(n));
+  if (a) return { risk: 'AVOID', why: a.why };
+  const c = CAUTION_RULES.find(r => r.rx.test(n));
+  if (c) return { risk: 'CAUTION', why: c.why };
+  return null;
+}
+
+const RANK = { SAFE: 0, CAUTION: 1, AVOID: 2 };
 
 function enforceRules(parsed, ingredientsText) {
-  const flags = parsed.flags || [];
-  const isClaim = n => /\bfree\b|greenwash|claim|misleading|unscented/.test(n);
+  const flags = Array.isArray(parsed.flags) ? parsed.flags : [];
+
+  // 1. Upgrade anything the AI under-rated.
   flags.forEach(f => {
-    const n = String(f.name || '').toLowerCase();
-    if (isClaim(n)) return;
-    if (ALWAYS_AVOID.some(rx => rx.test(n))) {
-      f.risk = 'AVOID';
-    } else if (FRAGRANCE_ALLERGENS.test(n) && f.risk === 'SAFE') {
-      f.risk = 'CAUTION';
-      f.reason = 'A known fragrance allergen — one of the ingredients the EU requires labels to disclose because it commonly causes skin reactions.';
+    const rule = ruleFor(f.name);
+    if (rule && RANK[rule.risk] > (RANK[f.risk] ?? 0)) {
+      f.risk = rule.risk;
+      f.reason = rule.why;
     }
   });
-  // If the label lists fragrance/parfum but the AI never flagged it, add it.
-  const text = String(ingredientsText || '').toLowerCase();
-  const labelHasFragrance = /\b(fragrance|parfum)\b(?!\s*-?\s*free)/.test(text);
-  const flagged = flags.some(f => /\b(fragrance|parfum|perfume)\b/.test(String(f.name || '').toLowerCase()) && f.risk === 'AVOID');
-  if (labelHasFragrance && !flagged) {
-    flags.unshift({
-      name: 'Fragrance (Parfum)',
-      risk: 'AVOID',
-      reason: 'One word on the label that can legally hide dozens of undisclosed chemicals, including some linked to hormone disruption.',
-      found_in: 'Perfume, lotion, shampoo, candles, laundry detergent, air fresheners',
+
+  // 2. Read the label ourselves and add anything the AI skipped.
+  labelSegments(ingredientsText).forEach(seg => {
+    const rule = ruleFor(seg);
+    if (!rule) return;
+    const already = flags.some(f => {
+      const n = String(f.name || '').toLowerCase();
+      return n.length > 3 && (n.includes(seg) || seg.includes(n));
     });
-  }
-  // Flag every disclosed fragrance allergen on the label the AI skipped.
-  const allergenRx = new RegExp(FRAGRANCE_ALLERGENS.source, 'g');
-  const onLabel = [...new Set((text.match(allergenRx) || []))];
-  onLabel.forEach(a => {
-    if (flags.some(f => String(f.name || '').toLowerCase().includes(a))) return;
-    flags.push({
-      name: a.replace(/\b\w/g, c => c.toUpperCase()),
-      risk: 'CAUTION',
-      reason: 'A known fragrance allergen — one of the ingredients the EU requires labels to disclose because it commonly causes skin reactions.',
-      found_in: 'Perfume, scented lotion, shampoo, and cleaning products',
-    });
+    if (already) return;
+    flags.push({ name: titleCase(seg), risk: rule.risk, reason: rule.why, found_in: '' });
   });
-  parsed.flags = flags;
+
+  // 3. Titanium dioxide: AVOID only when it can be swallowed or breathed in.
+  //    EU banned it as a food additive (E171) in 2022; the Campaign for Safe
+  //    Cosmetics Red List lists it for inhalable products. In creams and
+  //    lotions it is left as the AI rated it.
+  const TIO2 = /titanium dioxide|\bci\s*77891\b|\be\s?171\b/;
+  const form = String(parsed.product_form || '').toLowerCase();
+  const labelLower = String(ingredientsText || '').toLowerCase();
+  const sprayHint = /\b(butane|isobutane|propane|hydrofluorocarbon|hfc-152a|dimethyl ether|propellant|aerosol)\b/.test(labelLower);
+  const swallowed = parsed.exposure === 'ingested' || ['food', 'lip', 'oral_care'].includes(form);
+  const inhaled = ['powder', 'spray'].includes(form) || sprayHint;
+  if (swallowed || inhaled) {
+    const why = swallowed
+      ? 'Titanium dioxide can be swallowed with this product. The EU banned it as a food additive (E171) in 2022 over concerns it may damage DNA.'
+      : 'Titanium dioxide can be breathed in from powders and sprays. It is classified as a possible carcinogen when inhaled and is on the Campaign for Safe Cosmetics Red List for inhalable products.';
+    let found = false;
+    flags.forEach(f => {
+      if (TIO2.test(String(f.name || '').toLowerCase())) { f.risk = 'AVOID'; f.reason = why; found = true; }
+    });
+    if (!found) {
+      const seg = labelSegments(ingredientsText).find(s => TIO2.test(s));
+      if (seg) flags.push({ name: titleCase(seg), risk: 'AVOID', reason: why, found_in: 'Candy, frosting, gum, toothpaste, lip products, face powders, spray sunscreen' });
+    }
+  }
+
+  // 4. Drop the generic catch-all if real flags now exist.
+  parsed.flags = flags.length > 1 ? flags.filter(f => f.name !== 'Synthetic Ingredients Detected') : flags;
 }
 
 // Steady 0-100 score computed from the flags (not by the AI) so the same
@@ -400,6 +487,7 @@ JSON format:
   "extracted_ingredients": "comma separated ingredients from photo (photo scans only, else empty string)",
   "summary": "2-3 warm plain English sentences about the product overall. Do NOT include swap suggestions or DIY recipes in the summary — those go in swap_tip and diy_recipe fields only.",
   "quick_take": "ONE short, calm sentence (15 words max) a shopper can read in the store aisle. Lead with the single most useful takeaway. No fear language, no exclamation marks.",
+  "product_form": "Exactly one of: food (anything eaten or drunk, including candy, gum, and supplements), lip (lipstick, lip gloss, lip balm), oral_care (toothpaste, mouthwash), powder (loose or pressed face powder, setting powder, blush, eyeshadow, body or baby powder, dry shampoo powder), spray (aerosol or pump spray: hairspray, spray sunscreen, dry shampoo spray, body mist, spray deodorant), other",
   "exposure": "Exactly one of: leave_on (lotion, deodorant, makeup, serum, sunscreen), rinse_off (shampoo, body wash, soap, toothpaste), ingested (food, drink, supplement), household (cleaning or laundry products)",
   "who_should_care": "1-2 everyday-language sentences naming who should pay closer attention to THIS product's concerns (for example: pregnant or trying to conceive, babies and young kids, people with hormone or thyroid issues, very sensitive skin, people who react to mold). NEVER use clinical jargon like 'compromised detox pathways' or 'impaired methylation' — describe it in words anyone understands. Empty string if the product is clean.",
   "swap_search": "A 2-5 word store search phrase for a cleaner version of this product, for example 'fragrance free body lotion' or 'organic mac and cheese'. Empty string if the product is clean.",
@@ -488,7 +576,7 @@ phthalates,
 coal tar,
 toluene,
 ammonia,
-titanium dioxide in food/E171,
+titanium dioxide/E171/CI 77891 when it can be swallowed or inhaled — food, candy, gum, supplements, lip products, toothpaste, loose or pressed powders, and sprays. In creams and lotions it is not a red flag,
 hydroquinone,
 mercury/thimerosal,
 lead acetate,
@@ -597,7 +685,7 @@ FINAL MANDATORY CHECK BEFORE RETURNING JSON: Look at your summary. If it contain
 
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 2000,
+    max_tokens: 4096,
     messages: [{ role: "user", content }],
   });
 
@@ -617,13 +705,20 @@ FINAL MANDATORY CHECK BEFORE RETURNING JSON: Look at your summary. If it contain
             return JSON.parse(repaired);
           } catch(e2) {}
         }
-        const summaryMatch = raw.match(/"summary"\s*:\s*"([^"]+)"/);
-        const verdictMatch = raw.match(/"verdict"\s*:\s*"([^"]+)"/);
+        const pick = key => { const m = raw.match(new RegExp('"' + key + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"')); return m ? m[1] : ''; };
+        // Salvage every complete flag object from the cut-off answer
+        const flags = [];
+        (raw.match(/\{\s*"name"[^{}]*\}/g) || []).forEach(s => { try { flags.push(JSON.parse(s)); } catch (e3) {} });
         return {
-          summary: summaryMatch ? summaryMatch[1] : 'Could not fully analyze this product. Please try again.',
-          verdict: verdictMatch ? verdictMatch[1] : 'CAUTION',
-          flags: [],
-          swap_tip: '',
+          parse_failed: true,
+          extracted_ingredients: pick('extracted_ingredients'),
+          summary: pick('summary') || 'Could not fully analyze this product. Please try again.',
+          quick_take: pick('quick_take'),
+          exposure: pick('exposure'),
+          product_form: pick('product_form'),
+          verdict: 'CAUTION',
+          flags,
+          swap_tip: pick('swap_tip'),
           diy_recipe: ''
         };
       }
@@ -633,6 +728,7 @@ FINAL MANDATORY CHECK BEFORE RETURNING JSON: Look at your summary. If it contain
   }
 
   return {
+    parse_failed: true,
     summary: 'The scan had trouble processing. Please try again or switch to text mode.',
     verdict: 'CAUTION',
     flags: [],
@@ -713,7 +809,13 @@ export default async function handler(req, res) {
       return res.status(200).json(eduData);
     }
 
-    const parsed = await getFastScan(client, ingredients, image, wellness_profile || []);
+    let parsed = await getFastScan(client, ingredients, image, wellness_profile || []);
+    if (parsed && parsed.parse_failed) {
+      console.log('Scan answer was cut off or unreadable — retrying once');
+      const retry = await getFastScan(client, ingredients, image, wellness_profile || []);
+      if (retry && !retry.parse_failed) parsed = retry;
+      else if (retry && (retry.flags || []).length > (parsed.flags || []).length) parsed = retry;
+    }
     if (!parsed || !parsed.summary) throw new Error("Could not analyze ingredients — please try again");
 
     if (parsed.flags) {
@@ -773,9 +875,17 @@ export default async function handler(req, res) {
         parsed.verdict = 'LOOKS CLEAN';
       }
 
-      const { score, tier } = computeScore(parsed.flags, combinations, parsed.exposure);
-      parsed.score = score;
-      parsed.tier = tier;
+      const nothingRead = parsed.parse_failed && !String(ingredients || parsed.extracted_ingredients || '').trim();
+      if (nothingRead) {
+        // We could not read the label at all — show no score rather than a wrong one.
+        parsed.summary = "I couldn't read this label clearly. Try a closer, well-lit photo of just the ingredient list, or tap Type Ingredients and paste it in.";
+        parsed.quick_take = "Couldn't read this label — try again.";
+      } else {
+        const { score, tier } = computeScore(parsed.flags, combinations, parsed.exposure);
+        parsed.score = score;
+        parsed.tier = tier;
+      }
+      delete parsed.parse_failed;
     }
 
     return res.status(200).json(parsed);
