@@ -319,8 +319,8 @@ function enforceRules(parsed, ingredientsText) {
 
 // Steady 0-100 score computed from the flags (not by the AI) so the same
 // product always gets the same number. Everyday exposure counts more than
-// rinse-off or household use. Any AVOID caps the score below "Great pick";
-// a dangerous chemical combination caps it at "Put it back".
+// rinse-off or household use. Any AVOID ingredient caps the score in
+// "Put it back" territory; a dangerous chemical combination caps it at 20.
 function computeScore(flags, combinations, exposure) {
   const avoid = flags.filter(f => f.risk === 'AVOID').length;
   const caution = flags.filter(f => f.risk === 'CAUTION').length;
@@ -328,8 +328,11 @@ function computeScore(flags, combinations, exposure) {
   const cautionCombos = combinations.length - dangerCombos;
   const weight = (exposure === 'rinse_off' || exposure === 'household') ? 0.75 : 1;
   let score = Math.round(100 - (avoid * 12 + caution * 4) * weight - cautionCombos * 5 - dangerCombos * 25);
-  if (avoid > 0) score = Math.min(score, 69);
-  if (dangerCombos > 0) score = Math.min(score, 30);
+  // Any AVOID ingredient (fragrance, parabens, dyes, etc.) can never earn a
+  // good score: it always lands in "Put it back" (39 or lower), and each
+  // extra AVOID pushes it lower.
+  if (avoid > 0) score = Math.min(score, 39 - (avoid - 1) * 5);
+  if (dangerCombos > 0) score = Math.min(score, 20);
   score = Math.max(5, Math.min(100, score));
   const tier = score >= 80 ? 'Great pick' : score >= 60 ? 'Fine for now' : score >= 40 ? 'Swap when you can' : 'Put it back';
   return { score, tier };
