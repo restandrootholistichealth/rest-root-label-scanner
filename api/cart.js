@@ -47,11 +47,12 @@ Fine as is: most whole, single-ingredient foods. The Clean Fifteen produce (avoc
 
 RULES
 1. Go through EVERY item on her list, in her order. Do not skip any. Combine exact duplicates.
-2. Only suggest brands or store lines that are realistically sold at her store. Never invent a product name. If you are not sure a specific product is carried there, name the store's own organic line or describe exactly what to look for instead.
+2. Only suggest brands or store lines that are realistically sold at her store. Never invent a product. Only name a brand + product if you are confident that brand actually makes that exact product (for example: Simple Mills makes crackers and baking mixes, NOT pasta; Banza makes chickpea pasta and boxed mac & cheese; Annie's makes organic and gluten-free boxed mac & cheese; Siete makes grain-free tortilla chips and tortillas). If you are not certain, name the store's own organic line or describe exactly what to look for instead.
+2b. "pick" is ONE thing she can put in her cart — a single product or a store-brand line, never a recipe or a list of ingredients. A boxed food gets swapped for a cleaner boxed version of the same food (Kraft mac & cheese → Annie's or Banza mac & cheese), not for its ingredients.
 3. "look_for" is the label check that works even if the suggested product is out of stock — always fill it for swaps.
-4. Calm, practical tone. No fear language. Never tell her something is toxic or dangerous. Never make health or medical claims, never mention diseases or conditions, and never give dosing or supplement advice. If the list includes medicine, supplements, or baby formula, set action to "keep" and set why to "Ask your doctor or pharmacist before changing this one."
+4. Calm, practical tone. No fear language. Never tell her something is toxic or dangerous. Never make health or medical claims anywhere (including top_three) — no claims about brains, development, hormones, inflammation, gut, immunity, or any body effect. Say WHAT is in or out of the product (e.g. "no artificial dyes", "avocado oil instead of soybean oil"), not what it does to the body. Never mention diseases or conditions, and never give dosing or supplement advice. If the list includes medicine, supplements, or baby formula, set action to "keep" and set why to "Ask your doctor or pharmacist before changing this one."
 5. Keep each "why" to one short sentence a shopper can read in the aisle.
-6. price_change: "same" (about the same price), "a bit more" (roughly up to $1-2 more), or "more" (noticeably pricier).
+6. price_change must be HONEST: "same" only if the swap really costs about the same as what she wrote; "a bit more" if roughly $1-2 more; "more" if noticeably pricier (premium brands like Siete, Simple Mills, Primal Kitchen, grass-fed beef usually cost more than conventional). A tight budget means choosing cheaper picks (store-brand organic, frozen, bulk) — never mislabeling a pricey pick as "same".
 7. priority (for swaps only): "high" for things eaten or used daily or by kids, or with dyes/HFCS/artificial sweeteners/nitrites; "medium" for seed oils, enriched flour, conventional Dirty Dozen produce; "low" for nice-to-haves.
 8. Non-food items (cleaning, laundry, personal care, paper goods): apply the same idea — prefer fragrance-free and dye-free options sold at that store.
 
@@ -116,7 +117,7 @@ export default async function handler(req, res) {
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-sonnet-4-6",
       max_tokens: 6000,
       messages: [{ role: "user", content: buildPrompt({ list: cleanList, store, budget, needs: Array.isArray(needs) ? needs.slice(0, 10) : [] }) }],
     });
