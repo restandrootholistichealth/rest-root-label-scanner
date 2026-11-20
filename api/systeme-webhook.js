@@ -259,6 +259,9 @@ export default async function handler(req, res) {
     const failed = [];
 
     if (isScanner) {
+      // Tag scanner buyers so newsletters can go to "Scanner Customer".
+      try { await tagContact(email, 'Scanner Customer'); }
+      catch (e) { console.error('Could not add Scanner Customer tag:', e.message); }
       try { await sendPasswordEmail(email, name); sent.push('Label Scanner'); }
       catch (e) { console.error('Scanner email error:', e); failed.push('Label Scanner'); }
     }

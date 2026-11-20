@@ -10,6 +10,7 @@
     { "src": "api/cart.js", "use": "@vercel/node" },
     { "src": "api/meals.js", "use": "@vercel/node" },
     { "src": "api/auth.js", "use": "@vercel/node" },
+    { "src": "api/systeme-check.js", "use": "@vercel/node" },
     { "src": "public/**", "use": "@vercel/static" }
   ],
   "routes": [
@@ -27,6 +28,7 @@
     { "src": "/api/cart", "dest": "/api/cart.js" },
     { "src": "/api/meals", "dest": "/api/meals.js" },
     { "src": "/api/auth", "dest": "/api/auth.js" },
+    { "src": "/api/systeme-check", "dest": "/api/systeme-check.js" },
     { "src": "/", "dest": "/public/go.html" },
     { "src": "/go(\\.html)?", "dest": "/public/go.html" },
     { "src": "/onboarding(\\.html)?", "dest": "/public/index.html" },
