@@ -53,6 +53,9 @@ export default async function handler(req, res) {
       if (!info.found) {
         return res.status(404).json({ code: 'not_found', error: "We couldn't find a purchase for that email. Try the email you used at checkout, or email lindsay@restandrootholistic.com and we'll sort it out." });
       }
+      if (!info.ent.scanner && !info.hadScanner) {
+        return res.status(404).json({ code: 'no_purchase', checkout: CHECKOUT, error: "We don't see a scanner purchase on this email. If you bought with a different email, try that one." });
+      }
       if (!info.ent.scanner) {
         return res.status(402).json({ code: 'renew', checkout: CHECKOUT, error: "Your scanner subscription isn't active right now. Restart it to log back in." });
       }

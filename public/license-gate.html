@@ -60,6 +60,13 @@
       <button class="link" onclick="sendCode(true)">Send a new code</button>
       <button class="link" onclick="back()" style="margin-left:12px;">Use a different email</button>
     </div>
+    <!-- Never bought on this email -->
+    <div id="step-nopurchase" class="hidden">
+      <h2>We don't see a scanner purchase</h2>
+      <p class="sub">There's no scanner subscription on <strong id="npEmail"></strong>. If you bought with a different email, try that one. If you think this is a mistake, email <a href="mailto:lindsay@restandrootholistic.com" style="color:var(--deep-sage);">lindsay@restandrootholistic.com</a> and we'll fix it.</p>
+      <button class="btn" onclick="back()">Try a different email</button>
+      <a class="btn brown" id="trialBtn" href="#">New here? Start your 7-day free trial →</a>
+    </div>
     <!-- Renew -->
     <div id="step-renew" class="hidden">
       <h2>Your subscription isn't active</h2>
@@ -82,7 +89,7 @@
   const next = (params.get('next') || '/scanner').replace(/[^\w\/\-?=&]/g, '');
   const $ = id => document.getElementById(id);
   function msg(t, kind) { $('msg').textContent = t || ''; $('msg').className = 'msg ' + (kind || ''); }
-  function show(step) { ['step-email', 'step-code', 'step-renew'].forEach(s => $(s).classList.toggle('hidden', s !== step)); }
+  function show(step) { ['step-email', 'step-code', 'step-renew', 'step-nopurchase'].forEach(s => $(s).classList.toggle('hidden', s !== step)); }
 
   async function post(payload) {
     const r = await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -98,6 +105,7 @@
     try {
       const { status, d } = await post({ action: 'request_code', email });
       if (d.code === 'renew') { $('renewBtn').href = d.checkout || RR.CHECKOUT; show('step-renew'); return; }
+      if (d.code === 'no_purchase') { $('npEmail').textContent = email; $('trialBtn').href = d.checkout || RR.CHECKOUT; show('step-nopurchase'); return; }
       if (!d.ok) { msg(d.error || 'Something went wrong. Please try again.', 'error'); return; }
       codeToken = d.codeToken;
       $('sentTo').textContent = email;

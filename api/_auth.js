@@ -25,6 +25,13 @@ const ADMIN_EMAILS = [
   'restandrootholistichealing@gmail.com',
 ];
 
+// EMAIL CORRECTIONS — for customers who mistyped their email at checkout.
+// Format: 'the email she logs in with': 'the email her purchase is under',
+// The login code goes to the first one; access is checked on the second.
+const EMAIL_ALIASES = {
+  // 'hello@naturalhealthnetwork.org': 'hello@naturalhealthnetwork.com',
+};
+
 // Tag names the purchase webhook adds in Systeme.io for one-time add-ons.
 export const ADDON_TAGS = { cart: 'Clean Cart Builder', meals: 'Clean Meal Planner' };
 
@@ -82,21 +89,25 @@ export async function entitlementsFor(email) {
     try { const c = await findContact(e); contactId = c ? c.id : null; } catch (err) {}
     return { contactId, ent: { scanner: true, cart: true, meals: true }, admin: true, found: true };
   }
-  const contact = await findContact(e);
+  const purchaseEmail = normEmail(EMAIL_ALIASES[e] || e);
+  const contact = await findContact(purchaseEmail);
   if (!contact) return { contactId: null, ent: { scanner: false, cart: false, meals: false }, found: false };
 
   const subs = await systeme(`/payment/subscriptions?contact=${contact.id}&limit=50`);
   const items = (subs && subs.items) || [];
-  const scanner = items.some(s => {
+  const isScannerPlan = s => {
     const plan = s.pricePlan || {};
     const name = `${plan.innerName || ''} ${plan.name || ''} ${plan.statementDescriptor || ''}`.toLowerCase();
-    return (name.includes('label scanner') || name.includes('scanner')) && ACTIVE.includes(String(s.status || '').toLowerCase());
-  });
+    return name.includes('label scanner') || name.includes('scanner');
+  };
+  const hadScanner = items.some(isScannerPlan);   // ever subscribed (any status)
+  const scanner = items.some(s => isScannerPlan(s) && ACTIVE.includes(String(s.status || '').toLowerCase()));
   const tags = (contact.tags || []).map(t => String(t.name || '').toLowerCase());
   const has = name => tags.includes(name.toLowerCase());
   return {
     contactId: contact.id,
     found: true,
+    hadScanner,
     // Add-ons ride along with an active scanner subscription.
     ent: { scanner, cart: scanner && has(ADDON_TAGS.cart), meals: scanner && has(ADDON_TAGS.meals) },
   };
