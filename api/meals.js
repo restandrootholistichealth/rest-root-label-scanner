@@ -13,7 +13,22 @@ const BUDGET_HINTS = {
   flexible: "FLEXIBLE BUDGET: Any quality whole-food ingredients are fine, including grass-fed beef, wild salmon, and pasture-raised chicken."
 };
 
-function buildPrompt({ adults, kids, dinners, minutes, budget, needs, dislikes, lunches }) {
+function buildPrompt(opts) {
+  const base = basePrompt(opts);
+  if (!opts.swap) return base;
+  const s = opts.swap;
+  return base + `
+
+SWAP MODE — IMPORTANT, THIS OVERRIDES THE NUMBER OF DINNERS ABOVE:
+She already has a plan and wants to replace just ONE dinner.
+- Replace "${s.name}" (${s.day}) with ONE new dinner that follows every rule above.
+- The new dinner must be clearly different from all of these: ${JSON.stringify(s.avoid)}.
+- The "meals" array must contain exactly ONE meal, with "day" set to "${s.day}".
+- The "shopping_list" must cover the WHOLE week: the new dinner plus these other dinners she is keeping:
+${JSON.stringify(s.keep)}`;
+}
+
+function basePrompt({ adults, kids, dinners, minutes, budget, needs, dislikes, lunches }) {
   const needsText = needs && needs.length ? needs.join(', ') : 'none';
   return `You are the Rest & Root Clean Meal Planner, made by Lindsay Greear, certified naturopath. You plan simple, family-friendly, whole-food meals for busy moms. Respond ONLY with valid JSON, no markdown, no preamble.
 
@@ -102,6 +117,20 @@ export default async function handler(req, res) {
     dislikes: String(b.dislikes || '').slice(0, 300),
     lunches: !!b.lunches,
   };
+
+  // Swap one dinner: { swap: { name, day, avoid: [names], keep: [{ name, ingredients }] } }
+  if (b.swap && typeof b.swap === 'object') {
+    const keep = (Array.isArray(b.swap.keep) ? b.swap.keep : []).slice(0, 7).map(m => ({
+      name: String(m.name || '').slice(0, 100),
+      ingredients: (Array.isArray(m.ingredients) ? m.ingredients : []).slice(0, 20).map(x => String(x).slice(0, 80)),
+    }));
+    opts.swap = {
+      name: String(b.swap.name || '').slice(0, 100),
+      day: String(b.swap.day || 'Day 1').slice(0, 20),
+      avoid: (Array.isArray(b.swap.avoid) ? b.swap.avoid : []).slice(0, 20).map(x => String(x).slice(0, 100)),
+      keep,
+    };
+  }
 
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

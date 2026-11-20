@@ -507,6 +507,7 @@ JSON format:
   "who_should_care": "1-2 everyday-language sentences naming who should pay closer attention to THIS product's concerns (for example: pregnant or trying to conceive, babies and young kids, people with hormone or thyroid issues, very sensitive skin, people who react to mold). NEVER use clinical jargon like 'compromised detox pathways' or 'impaired methylation' — describe it in words anyone understands. Empty string if the product is clean.",
   "swap_search": "A 2-5 word store search phrase for a cleaner version of this product, for example 'fragrance free body lotion' or 'organic mac and cheese'. Empty string if the product is clean.",
   "swap_tip": "One sentence recommending a specific clean product to swap to. No DIY here — just a product recommendation. Empty string if product is clean.",
+  "swap_product": "The product from swap_tip written as a short grocery-list item (max 8 words), e.g. 'Primal Kitchen avocado oil ranch' or 'fragrance-free unscented body lotion'. Empty string if the product is clean.",
   "diy_recipe": "ONLY if a simple DIY version exists AND it is meaningfully better than buying clean. Exact recipe with measurements. Empty string if no good DIY exists OR if you already gave a product swap. Never duplicate what is in swap_tip.",
   "flags": [
     {
@@ -735,6 +736,7 @@ FINAL MANDATORY CHECK BEFORE RETURNING JSON: Look at your summary. If it contain
           verdict: 'CAUTION',
           flags,
           swap_tip: pick('swap_tip'),
+          swap_product: pick('swap_product'),
           diy_recipe: ''
         };
       }
@@ -910,4 +912,4 @@ export default async function handler(req, res) {
     console.error(err);
     return res.status(500).json({ error: err.message });
   }
-}
+}

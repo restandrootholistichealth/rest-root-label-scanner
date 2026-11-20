@@ -77,7 +77,11 @@ export async function findContact(email) {
 // What does this person own right now?
 export async function entitlementsFor(email) {
   const e = normEmail(email);
-  if (ADMIN_EMAILS.includes(e)) return { contactId: null, ent: { scanner: true, cart: true, meals: true }, admin: true, found: true };
+  if (ADMIN_EMAILS.includes(e)) {
+    let contactId = null;
+    try { const c = await findContact(e); contactId = c ? c.id : null; } catch (err) {}
+    return { contactId, ent: { scanner: true, cart: true, meals: true }, admin: true, found: true };
+  }
   const contact = await findContact(e);
   if (!contact) return { contactId: null, ent: { scanner: false, cart: false, meals: false }, found: false };
 
@@ -128,6 +132,47 @@ export async function checkAccess(token, tool) {
   if (!ent.scanner) return { ok: false, code: 'renew', ent, session };
   if (tool !== 'scanner' && !ent[tool]) return { ok: false, code: 'not_purchased', ent, session };
   return { ok: true, ent, session, email: s.e };
+}
+
+// ---------------------------------------------------------------------------
+// Saved preferences — stored on her Systeme.io contact in a custom field, so
+// her Cart Builder / Meal Planner settings follow her to any phone.
+// Shape: { cart: {...settings}, meals: {...settings}, queue: ["swap from a scan", ...] }
+// ---------------------------------------------------------------------------
+const PREFS_SLUG = 'rr_app_prefs';
+let prefsFieldReady = false;
+
+async function ensurePrefsField() {
+  if (prefsFieldReady) return;
+  const list = await systeme('/contact_fields?limit=100');
+  const items = (list && list.items) || (Array.isArray(list) ? list : []);
+  if (!items.some(f => f.slug === PREFS_SLUG)) {
+    await systeme('/contact_fields', { method: 'POST', body: JSON.stringify({ fieldName: 'Rest & Root App Settings', slug: PREFS_SLUG }) });
+  }
+  prefsFieldReady = true;
+}
+
+export async function getPrefs(contactId) {
+  if (!contactId) return null;
+  const c = await systeme(`/contacts/${contactId}`);
+  const f = ((c && c.fields) || []).find(x => x.slug === PREFS_SLUG);
+  if (!f || !f.value) return {};
+  try { return JSON.parse(f.value); } catch (e) { return {}; }
+}
+
+export async function savePrefs(contactId, patch) {
+  if (!contactId) return null;
+  await ensurePrefsField();
+  const current = (await getPrefs(contactId)) || {};
+  const next = { ...current, ...patch };
+  if (Array.isArray(next.queue)) next.queue = next.queue.slice(-25);
+  const value = JSON.stringify(next).slice(0, 4000);
+  await systeme(`/contacts/${contactId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/merge-patch+json' },
+    body: JSON.stringify({ fields: [{ slug: PREFS_SLUG, value }] }),
+  });
+  return next;
 }
 
 // Used by the purchase webhook: add a tag to a contact (creating the tag if needed).

@@ -95,6 +95,7 @@
     <p class="intro">Paste your normal grocery list. I'll show you what's already fine, what to swap, and exactly what to grab at your store, without blowing your budget.</p>
     <div class="card">
       <div class="prefill-note" id="prefillNote">🍽️ Your Meal Planner shopping list is loaded below.</div>
+      <div class="prefill-note" id="queueNote"></div>
       <label class="field" for="list">Your grocery list</label>
       <textarea id="list" placeholder="One item per line or separated by commas&#10;&#10;Example:&#10;goldfish crackers&#10;ranch dressing&#10;strawberries&#10;ground beef&#10;canola oil&#10;dish soap"></textarea>
 
@@ -185,12 +186,36 @@
     g.style.display = 'block';
   }
 
-  function startForm() {
-    show('form', true);
-    const prefs = JSON.parse(read(PREFS_STORE) || '{}');
+  function applyPrefs(prefs) {
+    if (!prefs) return;
     if (prefs.store) document.getElementById('store').value = prefs.store;
     if (prefs.budget) setSeg(prefs.budget);
-    (prefs.needs || []).forEach(v => { const c = document.querySelector(`#needs .chip[data-v="${v}"]`); if (c) c.classList.add('on'); });
+    if (Array.isArray(prefs.needs)) document.querySelectorAll('#needs .chip').forEach(c => c.classList.toggle('on', prefs.needs.includes(c.dataset.v)));
+  }
+
+  // Swaps she saved from scan results get added to the top of her list.
+  let queueUsed = [];
+  function applyQueue() {
+    const q = RR.queue();
+    const box = document.getElementById('list');
+    const fresh = q.filter(x => !box.value.toLowerCase().includes(x.toLowerCase()));
+    if (!fresh.length) return;
+    box.value = fresh.join('\n') + (box.value.trim() ? '\n' + box.value : '');
+    queueUsed = q;
+    const note = document.getElementById('queueNote');
+    note.textContent = `🛒 ${fresh.length} swap${fresh.length === 1 ? '' : 's'} from your scans added to the top of your list.`;
+    note.style.display = 'block';
+  }
+
+  function startForm() {
+    show('form', true);
+    applyPrefs(JSON.parse(read(PREFS_STORE) || '{}'));
+    // Settings saved to her account win (they follow her across devices).
+    RR.getPrefs().then(p => {
+      if (!p) return;
+      if (p.cart) { applyPrefs(p.cart); store(PREFS_STORE, JSON.stringify(p.cart)); }
+      if (Array.isArray(p.queue) && p.queue.length) { RR.queueMerge(p.queue); applyQueue(); }
+    });
     const prefill = read('rr_cart_prefill');
     if (prefill) {
       document.getElementById('list').value = prefill;
@@ -200,6 +225,7 @@
       const last = read(LAST_STORE);
       if (last) { try { const d = JSON.parse(last); document.getElementById('list').value = d.list || ''; if (d.result) { lastResult = d.result; render(d.result); } } catch (e) {} }
     }
+    applyQueue();
   }
 
   function setSeg(v) { document.querySelectorAll('#budget button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
@@ -217,6 +243,7 @@
     const budget = (document.querySelector('#budget button.on') || {}).dataset?.v || 'moderate';
     const needs = [...document.querySelectorAll('#needs .chip.on')].map(c => c.dataset.v);
     store(PREFS_STORE, JSON.stringify({ store: storeV, budget, needs }));
+    RR.savePrefs({ cart: { store: storeV, budget, needs } });
 
     const btn = document.getElementById('goBtn');
     btn.disabled = true;
@@ -230,6 +257,7 @@
       const result = await call({ list, store: storeV, budget, needs });
       lastResult = result;
       store(LAST_STORE, JSON.stringify({ list, result }));
+      if (queueUsed.length) { RR.queueClear(); queueUsed = []; document.getElementById('queueNote').style.display = 'none'; }
       render(result);
       document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
     } catch (e) {

@@ -30,6 +30,40 @@
     // Old shared-password unlock, honored only during the grace period.
     legacyOnly: () => !read('rr_session') && read('rr_unlocked') === 'true',
     loginUrl: next => '/login' + (next ? '?next=' + encodeURIComponent(next) : ''),
+    // ---- Saved settings (follow her across devices via her account) ----
+    async getPrefs() {
+      const session = read('rr_session');
+      if (!session) return null;
+      try {
+        const r = await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'get_prefs', session }) });
+        const d = await r.json();
+        if (d.session) write('rr_session', d.session);
+        return d.prefs || null;
+      } catch (e) { return null; }
+    },
+    savePrefs(patch) {
+      const session = read('rr_session');
+      if (!session) return;
+      fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'save_prefs', session, prefs: patch }) }).catch(() => {});
+    },
+    // ---- Scan-to-cart list: swaps saved from scan results ----
+    queue() { try { return JSON.parse(read('rr_cart_queue') || '[]'); } catch (e) { return []; } },
+    queueAdd(item) {
+      const q = RR.queue();
+      const clean = String(item || '').trim();
+      if (!clean || q.some(x => x.toLowerCase() === clean.toLowerCase())) return q.length;
+      q.push(clean);
+      write('rr_cart_queue', JSON.stringify(q));
+      RR.savePrefs({ queue: q });
+      return q.length;
+    },
+    queueMerge(serverQueue) {
+      const q = RR.queue();
+      (serverQueue || []).forEach(x => { if (!q.some(y => y.toLowerCase() === String(x).toLowerCase())) q.push(String(x)); });
+      write('rr_cart_queue', JSON.stringify(q));
+      return q;
+    },
+    queueClear() { write('rr_cart_queue', null); RR.savePrefs({ queue: [] }); },
     // Asks the server what she owns right now (re-checks Systeme.io once a day).
     async refresh() {
       const session = read('rr_session');

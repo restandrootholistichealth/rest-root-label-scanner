@@ -6,7 +6,7 @@
 
 import crypto from 'crypto';
 import { Resend } from 'resend';
-import { sign, unsign, normEmail, codeHash, entitlementsFor, newSession, checkAccess, CODE_MS } from './_auth.js';
+import { sign, unsign, normEmail, codeHash, entitlementsFor, newSession, checkAccess, getPrefs, savePrefs, CODE_MS } from './_auth.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const CHECKOUT = 'https://restandrootholistichealth.systeme.io/87f9a7a0-346d5f81';
@@ -75,6 +75,24 @@ export default async function handler(req, res) {
     if (action === 'status') {
       const r = await checkAccess(body.session, 'scanner');
       return res.status(200).json({ ok: r.ok, code: r.code || null, ent: r.ent || null, session: r.session || null, checkout: CHECKOUT });
+    }
+
+    // Saved settings for the Cart Builder / Meal Planner (and the scan-to-cart list)
+    if (action === 'get_prefs' || action === 'save_prefs') {
+      const access = await checkAccess(body.session, 'scanner');
+      if (!access.ok) return res.status(401).json({ code: access.code });
+      const s = unsign(access.session || body.session);
+      const contactId = s && s.c;
+      if (!contactId) return res.status(200).json({ ok: true, prefs: null, local: true });
+      if (action === 'get_prefs') {
+        return res.status(200).json({ ok: true, prefs: await getPrefs(contactId), session: access.session || null });
+      }
+      const patch = {};
+      const p = body.prefs || {};
+      if (p.cart && typeof p.cart === 'object') patch.cart = p.cart;
+      if (p.meals && typeof p.meals === 'object') patch.meals = p.meals;
+      if (Array.isArray(p.queue)) patch.queue = p.queue.map(x => String(x).slice(0, 120));
+      return res.status(200).json({ ok: true, prefs: await savePrefs(contactId, patch), session: access.session || null });
     }
 
     return res.status(400).json({ error: 'Unknown action' });

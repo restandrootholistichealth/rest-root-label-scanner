@@ -66,6 +66,8 @@
   .shop-item input { width: 20px; height: 20px; accent-color: var(--sage); }
   .shop-item.done span { text-decoration: line-through; opacity: 0.55; }
   .shop-item small { color: var(--warm-brown); margin-left: auto; white-space: nowrap; }
+  .swap-btn { width: 100%; margin-top: 12px; padding: 11px; border-radius: 8px; border: 1px dashed var(--sage); background: white; color: var(--deep-sage); font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .swap-btn:disabled { opacity: 0.7; cursor: wait; }
   .note { font-size: 13px; color: var(--deep-sage); line-height: 1.6; }
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--brown); color: white; padding: 12px 20px; border-radius: 24px; font-size: 14px; display: none; z-index: 10; }
   .footer { text-align: center; font-size: 11px; color: var(--warm-brown); margin-top: 30px; line-height: 1.7; }
@@ -194,15 +196,21 @@
   function stepVal(id) { return +document.querySelector(`.stepper[data-id="${id}"] span`).textContent; }
   function setStep(id, v) { document.querySelector(`.stepper[data-id="${id}"] span`).textContent = v; }
 
-  function startForm() {
-    show('form', true);
-    const p = JSON.parse(read(PREFS_STORE) || '{}');
+  function applyPrefs(p) {
+    if (!p) return;
     if (p.adults != null) setStep('adults', p.adults);
     if (p.kids != null) setStep('kids', p.kids);
     ['dinners', 'minutes', 'budget'].forEach(id => { if (p[id]) setSeg(id, p[id]); });
-    (p.needs || []).forEach(v => { const c = document.querySelector(`#needs .chip[data-v="${v}"]`); if (c) c.classList.add('on'); });
-    if (p.dislikes) document.getElementById('dislikes').value = p.dislikes;
+    if (Array.isArray(p.needs)) document.querySelectorAll('#needs .chip').forEach(c => c.classList.toggle('on', p.needs.includes(c.dataset.v)));
+    if (p.dislikes != null) document.getElementById('dislikes').value = p.dislikes;
     document.getElementById('lunches').checked = !!p.lunches;
+  }
+
+  function startForm() {
+    show('form', true);
+    applyPrefs(JSON.parse(read(PREFS_STORE) || '{}'));
+    // Her family profile saved to her account wins (follows her across devices).
+    RR.getPrefs().then(p => { if (p && p.meals) { applyPrefs(p.meals); store(PREFS_STORE, JSON.stringify(p.meals)); } });
     try { const last = JSON.parse(read(LAST_STORE) || 'null'); if (last) { lastPlan = last; render(last); } } catch (e) {}
   }
 
@@ -219,6 +227,7 @@
       lunches: document.getElementById('lunches').checked,
     };
     store(PREFS_STORE, JSON.stringify(opts));
+    RR.savePrefs({ meals: opts });
     const btn = document.getElementById('goBtn');
     btn.disabled = true;
     document.getElementById('results').innerHTML = '';
@@ -245,6 +254,7 @@
       if (m.steps && m.steps.length) html += `<h4>Steps</h4><ol>${m.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`;
       if (m.kid_tip) html += `<div class="kid">👧 ${esc(m.kid_tip)}</div>`;
       if (m.lunch) html += `<div class="lunch">🥪 Lunch: ${esc(m.lunch)}</div>`;
+      html += `<button class="swap-btn" id="swap-${i}" onclick="swapMeal(${i})">🔄 Not feeling this one? Swap it</button>`;
       html += `</div></div>`;
     });
     if (p.prep_ahead) html += `<div class="card" style="margin-top:12px;"><div class="note">⏱️ <strong>Sunday prep:</strong> ${esc(p.prep_ahead)}</div></div>`;
@@ -283,6 +293,42 @@
     if (!lastPlan) return;
     try { await navigator.clipboard.writeText('This week\'s shopping list 🌿\n' + listText(true)); toast('Copied! Paste it into your notes app.'); }
     catch (e) { toast('Could not copy — try again.'); }
+  }
+
+  // Replace one dinner; the shopping list is rebuilt for the whole week.
+  async function swapMeal(i) {
+    if (!lastPlan || !lastPlan.meals || !lastPlan.meals[i]) return;
+    const btn = document.getElementById('swap-' + i);
+    const old = lastPlan.meals[i];
+    btn.disabled = true; btn.textContent = '🔄 Finding a new dinner…';
+    const opts = JSON.parse(read(PREFS_STORE) || '{}');
+    lastPlan.swappedOut = (lastPlan.swappedOut || []).concat(old.name);
+    try {
+      const r = await call({
+        ...opts,
+        swap: {
+          name: old.name,
+          day: old.day || ('Day ' + (i + 1)),
+          avoid: lastPlan.meals.map(m => m.name).concat(lastPlan.swappedOut),
+          keep: lastPlan.meals.filter((_, j) => j !== i).map(m => ({ name: m.name, ingredients: m.ingredients })),
+        },
+      });
+      const fresh = (r.meals || [])[0];
+      if (!fresh) throw new Error('No new meal came back. Please try again.');
+      fresh.day = old.day || fresh.day;
+      lastPlan.meals[i] = fresh;
+      if (Array.isArray(r.shopping_list) && r.shopping_list.length) lastPlan.shopping_list = r.shopping_list;
+      if (Array.isArray(r.pantry_staples)) lastPlan.pantry_staples = r.pantry_staples;
+      store(LAST_STORE, JSON.stringify(lastPlan));
+      render(lastPlan);
+      const card = document.getElementById('meal-' + i);
+      if (card) { card.classList.add('open'); card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      toast('New dinner swapped in. Shopping list updated.');
+    } catch (e) {
+      if (e.code === 'login' || e.code === 'renew' || e.code === 'not_purchased') { gate(e.code); return; }
+      btn.disabled = false; btn.textContent = '🔄 Not feeling this one? Swap it';
+      toast(e.message || 'Could not swap — try again.');
+    }
   }
 
   function newPlan() {

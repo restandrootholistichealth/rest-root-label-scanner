@@ -139,6 +139,8 @@ fbq('track', 'PageView');
   .swap-card { background: white; border: 1px solid #e8e0d8; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
   .swap-card .swap-tip, .swap-card .diy-tip { margin-top: 0; margin-bottom: 8px; }
   .find-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .cart-add-btn { width: 100%; margin-top: 10px; padding: 12px; border-radius: 8px; border: none; background: var(--brown); color: white; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .cart-add-btn:disabled { background: var(--deep-sage); cursor: default; }
   .find-btn { flex: 1 1 120px; text-align: center; text-decoration: none; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--sage); color: var(--deep-sage); font-size: 13px; font-weight: 600; background: var(--light-sage); }
   .who-card { background: #FFF8F0; border: 1px solid #E8D5C4; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
   .who-text { font-size: 13px; color: #6a5a4a; line-height: 1.6; }
@@ -667,6 +669,21 @@ fbq('track', 'PageView');
     }
   }
 
+  // Scan -> Cart: save the swap to her next Clean Cart Builder list.
+  function addSwapToCart(btn) {
+    const item = decodeURIComponent(btn.dataset.item || '');
+    const ent = (window.RR && RR.ent()) || {};
+    if (!window.RR || !RR.session() || !ent.cart) {
+      // Not logged in or no Cart Builder yet: the Cart Builder page shows login / "Add it".
+      try { localStorage.setItem('rr_cart_queue', JSON.stringify([item])); } catch (e) {}
+      location.href = '/cart';
+      return;
+    }
+    const n = RR.queueAdd(item);
+    btn.disabled = true;
+    btn.innerHTML = `✓ Added! ${n} swap${n === 1 ? '' : 's'} waiting in your <a href="/cart" style="color:inherit;font-weight:800;">Cart Builder →</a>`;
+  }
+
   function toggleDetails() {
     const d = document.getElementById('full-details');
     const b = document.getElementById('details-toggle');
@@ -724,7 +741,11 @@ fbq('track', 'PageView');
       if (data.swap_tip) html += `<div class="swap-tip">💡 ${data.swap_tip}</div>`;
       if (data.swap_search) {
         const q = encodeURIComponent(data.swap_search);
-        html += `<div class="find-row"><a class="find-btn" href="https://www.target.com/s?searchTerm=${q}" target="_blank" rel="noopener">🛒 Find it at Target</a><a class="find-btn" href="https://www.amazon.com/s?k=${q}" target="_blank" rel="noopener">📦 Find it on Amazon</a></div>`;
+        html += `<div class="find-row"><a class="find-btn" href="https://www.target.com/s?searchTerm=${q}" target="_blank" rel="noopener">🎯 Find it at Target</a><a class="find-btn" href="https://www.amazon.com/s?k=${q}" target="_blank" rel="noopener">📦 Find it on Amazon</a></div>`;
+      }
+      const cartItem = data.swap_product || data.swap_search;
+      if (cartItem) {
+        html += `<button class="cart-add-btn" id="cartAddBtn" data-item="${encodeURIComponent(cartItem)}" onclick="addSwapToCart(this)">🛒 Add this swap to my next Clean Cart</button>`;
       }
       html += `</div>`;
     }
@@ -868,4 +889,4 @@ fbq('track', 'PageView');
   }
 </script>
 </body>
-</html>
+</html>
