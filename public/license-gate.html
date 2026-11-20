@@ -143,7 +143,11 @@
   (function init() {
     const pre = params.get('email') || RR.email();
     if (pre) $('email').value = pre;
-    // Already logged in? Go straight through.
+    // A login link for a DIFFERENT email than the one logged in on this
+    // phone (e.g. a shared device, or testing): log out and ask for a code.
+    const linkEmail = (params.get('email') || '').trim().toLowerCase();
+    if (RR.session() && linkEmail && linkEmail !== (RR.email() || '').toLowerCase()) RR.logout();
+    // Already logged in as this person? Go straight through.
     if (RR.session()) { location.href = next; return; }
     // Old "Open Your Scanner" email links (?key=RootScanner2025) still work
     // during the grace period.
