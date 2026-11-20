@@ -38,6 +38,15 @@ export const ADDON_TAGS = { cart: 'Clean Cart Builder', meals: 'Clean Meal Plann
 // Subscription statuses that count as "paid up" (trials show as active).
 const ACTIVE = ['active', 'trialing', 'trial', 'in_trial'];
 
+// FREE ACCESS — people who check out with a 100% code (NTRESOURCESVIP,
+// NHNSARAH, RRTEST100...) never get a subscription in Systeme.io. They still
+// get the "Scanner Customer" tag from the purchase webhook, so a contact with
+// that tag and NO scanner subscription ever is a free-code customer.
+// You can also give anyone free access by hand: add the tag "Scanner Free Access".
+// (Paying customers who cancel still lose access — they have a subscription on file.)
+const CUSTOMER_TAG = 'Scanner Customer';
+const FREE_TAG = 'Scanner Free Access';
+
 const b64 = s => Buffer.from(s).toString('base64url');
 const unb64 = s => Buffer.from(s, 'base64url').toString('utf8');
 const hmac = s => crypto.createHmac('sha256', process.env.LOGIN_SECRET || '').update(s).digest('base64url');
@@ -101,13 +110,15 @@ export async function entitlementsFor(email) {
     return name.includes('label scanner') || name.includes('scanner');
   };
   const hadScanner = items.some(isScannerPlan);   // ever subscribed (any status)
-  const scanner = items.some(s => isScannerPlan(s) && ACTIVE.includes(String(s.status || '').toLowerCase()));
+  const paidScanner = items.some(s => isScannerPlan(s) && ACTIVE.includes(String(s.status || '').toLowerCase()));
   const tags = (contact.tags || []).map(t => String(t.name || '').toLowerCase());
   const has = name => tags.includes(name.toLowerCase());
+  const free = has(FREE_TAG) || (has(CUSTOMER_TAG) && !hadScanner);
+  const scanner = paidScanner || free;
   return {
     contactId: contact.id,
     found: true,
-    hadScanner,
+    hadScanner: hadScanner || free,
     // Add-ons ride along with an active scanner subscription.
     ent: { scanner, cart: scanner && has(ADDON_TAGS.cart), meals: scanner && has(ADDON_TAGS.meals) },
   };
